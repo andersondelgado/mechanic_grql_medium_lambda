@@ -9,7 +9,7 @@ export class GestionTallerProdStats {
         const h = helpers || baseEntityHelpers;
         const ctx = {
             headerLambda: event?.headerLambda,
-            headerLambdaObject: event?.headerLambdaObject
+            // headerLambdaObject: event?.headerLambdaObject
         };
 
         let totalClients = 0;
@@ -24,7 +24,7 @@ export class GestionTallerProdStats {
         let accountsPayableTotal = 0;
         const monthlyMap: Record<string, { month: string; income: number; expenses: number; balance: number }> = {};
 
-        const filterOpts = { arrayFilter: [{ field: "_inverse_fk", value: true }] };
+        const filterOpts = { arrayFilter: [{ field: "_inverse_fk", value: true }], ...ctx };
 
         // Execute all 7 queries concurrently in parallel
         const [
