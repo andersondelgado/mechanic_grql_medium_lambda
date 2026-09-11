@@ -1,0 +1,22 @@
+{
+  "name": "medium-lambda",
+  "version": "1.0.0",
+  "description": "Taller Integrales 360 Garage - Modular Lambda Architecture",
+  "main": "dist/lambda_garage.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "skd-grql": "^1.1.5",
+    "socket.io-client": "^4.7.4",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "22.15.1",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
+  }
+}
