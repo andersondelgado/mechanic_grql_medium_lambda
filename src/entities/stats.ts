@@ -24,7 +24,7 @@ export class GestionTallerProdStats {
         let accountsPayableTotal = 0;
         const monthlyMap: Record<string, { month: string; income: number; expenses: number; balance: number }> = {};
 
-        const filterOpts = { arrayFilter: [{ field: "_inverse_fk", value: true }], ...ctx };
+        const filterOpts = { arrayFilter: [{ field: "_inverse_fk", value: true }] };
 
         // Execute all 7 queries concurrently in parallel
         const [
