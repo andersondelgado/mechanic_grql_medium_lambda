@@ -49,10 +49,18 @@ export class GestionTallerProdQuotes {
                 cId = await resolveId('clients', 'client_name', event.client_name, event, h);
             }
             if (!cId && event.license_plate) {
-                const plateKey = `vehicle_to_client:${String(event.license_plate).trim().toUpperCase()}`;
-                if (fkCache[plateKey]) {
-                    cId = fkCache[plateKey];
-                }
+                try {
+                    const vRes = await h.data_filter('vehicles', {
+                        filter: { field: 'license_plate', value: String(event.license_plate).trim() },
+                        headerLambda: event?.headerLambda,
+                        headerLambdaObject: event?.headerLambdaObject
+                    });
+                    const vItems = vRes?.content || (Array.isArray(vRes) ? vRes : []);
+                    if (vItems.length > 0 && vItems[0].clients_fk_id) {
+                        const rawFk = vItems[0].clients_fk_id;
+                        cId = Array.isArray(rawFk) ? rawFk[0] : rawFk;
+                    }
+                } catch { }
             }
             if (cId) event.clients_fk_id = [cId];
         }

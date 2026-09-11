@@ -2,6 +2,7 @@ import { dispatchFlowStep } from 'skd-grql';
 import { SECRET_KEY, set_db, refreshHelpers } from './config';
 import { ENTITY_REGISTRY } from './registry';
 import { GestionTallerProdCatalogState } from './entities/catalog_state';
+import { clearFkCache } from './helpers/fk_cache';
 
 async function main() {
     process.stdin.setEncoding('utf-8');
@@ -14,6 +15,7 @@ async function main() {
 
         set_db(event);
         refreshHelpers();
+        clearFkCache();
 
         const flows = event.request?.flows || [];
         const flow = flows.find((f: any) => f.name === "workflow_taller")

@@ -2,6 +2,12 @@ import { BaseEntityHelpers } from 'skd-grql';
 
 export const fkCache: Record<string, string> = {};
 
+export function clearFkCache(): void {
+    for (const key of Object.keys(fkCache)) {
+        delete fkCache[key];
+    }
+}
+
 export async function resolveId(
     table: string,
     field: string,
@@ -11,8 +17,6 @@ export async function resolveId(
 ): Promise<string | null> {
     const val = String(value || '').trim();
     if (!val) return null;
-    const cacheKey = `${table}:${field}:${val.toUpperCase()}`;
-    if (fkCache[cacheKey]) return fkCache[cacheKey];
 
     try {
         const res = await helpers.data_filter(table, {
@@ -22,7 +26,6 @@ export async function resolveId(
         });
         const items = res?.content || (Array.isArray(res) ? res : []);
         if (items && items.length > 0 && items[0]?.id) {
-            fkCache[cacheKey] = items[0].id;
             return items[0].id;
         }
     } catch { }

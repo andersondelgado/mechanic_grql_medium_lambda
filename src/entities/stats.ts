@@ -47,11 +47,11 @@ export class GestionTallerProdStats {
 
         // 1. Clients count
         const clientsItems = clientsRes?.content || (Array.isArray(clientsRes) ? clientsRes : []);
-        totalClients = clientsRes?.totalElements || clientsItems.length;
+        totalClients = clientsRes?.totalElements ?? clientsRes?.count ?? clientsItems.length;
 
         // 2. Vehicles count
         const vehiclesItems = vehiclesRes?.content || (Array.isArray(vehiclesRes) ? vehiclesRes : []);
-        totalVehicles = vehiclesRes?.totalElements || vehiclesItems.length;
+        totalVehicles = vehiclesRes?.totalElements ?? vehiclesRes?.count ?? vehiclesItems.length;
 
         // 3. Vehicle Receipts (in process vs completed)
         const receiptsItems = receiptsRes?.content || (Array.isArray(receiptsRes) ? receiptsRes : []);
