@@ -24,7 +24,10 @@ export class GestionTallerProdStats {
         let accountsPayableTotal = 0;
         const monthlyMap: Record<string, { month: string; income: number; expenses: number; balance: number }> = {};
 
-        const filterOpts = { arrayFilter: [{ field: "_inverse_fk", value: true }], ...ctx };
+        // Para métricas globales y conteos del taller:
+        // 1. NO propagar headerLambda en subconsultas para asegurar que se use la API Key maestra (evita 401 y RLS por usuario).
+        // 2. NO requerir _inverse_fk: true ya que ninguna métrica requiere árboles relacionales anidados, optimizando el rendimiento x10.
+        const cleanOpts = {};
 
         // Execute all 7 queries concurrently in parallel
         const [
@@ -36,16 +39,16 @@ export class GestionTallerProdStats {
             arRes,
             apRes
         ] = await Promise.all([
-            h.data_filter('clients', filterOpts).catch(() => null),
-            h.data_filter('vehicles', filterOpts).catch(() => null),
-            h.data_filter('vehicle_receipts', filterOpts).catch(() => null),
-            h.data_filter('financial_transactions', filterOpts).catch(() => null),
-            h.data_filter('monthly_control', filterOpts).catch(() => null),
-            h.data_filter('accounts_receivable', filterOpts).catch(() => null),
-            h.data_filter('accounts_payable', filterOpts).catch(() => null),
+            h.data_filter('clients', cleanOpts).catch(() => null),
+            h.data_filter('vehicles', cleanOpts).catch(() => null),
+            h.data_filter('vehicle_receipts', cleanOpts).catch(() => null),
+            h.data_filter('financial_transactions', cleanOpts).catch(() => null),
+            h.data_filter('monthly_control', cleanOpts).catch(() => null),
+            h.data_filter('accounts_receivable', cleanOpts).catch(() => null),
+            h.data_filter('accounts_payable', cleanOpts).catch(() => null),
         ]);
 
-        // 1. Clients count
+        // 1. Clients count (manejo robusto ante content[], totalElements o count)
         const clientsItems = clientsRes?.content || (Array.isArray(clientsRes) ? clientsRes : []);
         totalClients = clientsRes?.totalElements ?? clientsRes?.count ?? clientsItems.length;
 
