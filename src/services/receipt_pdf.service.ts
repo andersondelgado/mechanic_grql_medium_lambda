@@ -217,16 +217,89 @@ export class ReceiptPdfService {
       }
     }
 
+    // Decodificar e incrustar firmas digitales en base64
+    const embedSignatureImage = async (base64Str?: string) => {
+      if (!base64Str || typeof base64Str !== 'string') return null;
+      let clean = base64Str.trim();
+      if (clean.includes('base64,')) {
+        clean = clean.split('base64,')[1];
+      } else if (clean.includes(',')) {
+        clean = clean.split(',')[1];
+      }
+      clean = clean.replace(/\s+/g, '');
+      if (!clean) return null;
+
+      let imageBytes: Uint8Array;
+      if (typeof Buffer !== 'undefined') {
+        imageBytes = Buffer.from(clean, 'base64');
+      } else {
+        try {
+          const binary = atob(clean);
+          imageBytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            imageBytes[i] = binary.charCodeAt(i);
+          }
+        } catch {
+          return null;
+        }
+      }
+
+      if (!imageBytes || imageBytes.length === 0) return null;
+
+      try {
+        return await pdfDoc.embedPng(imageBytes);
+      } catch (errPng) {
+        try {
+          return await pdfDoc.embedJpg(imageBytes);
+        } catch (errJpg) {
+          console.warn('No se pudo procesar la firma como PNG o JPG:', errPng, errJpg);
+          return null;
+        }
+      }
+    };
+
+    const clientSigRaw = data.client_signature || (data as any).signature_client || (data as any).firma_cliente;
+    const mechanicSigRaw = data.mechanic_signature || (data as any).signature_mechanic || (data as any).firma_mecanico || (data as any).firma_tecnico;
+
+    const [clientSigImg, mechanicSigImg] = await Promise.all([
+      embedSignatureImage(clientSigRaw),
+      embedSignatureImage(mechanicSigRaw),
+    ]);
+
     // Firmas Digitales
     page1.drawRectangle({ x: 30, y: 70, width: 260, height: 90, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1 });
     page1.drawText('FIRMA DEL CLIENTE / PROPIETARIO', { x: 40, y: 145, size: 8, font: helveticaBold });
+
+    if (clientSigImg) {
+      const maxW = 210;
+      const maxH = 44;
+      const scale = Math.min(maxW / clientSigImg.width, maxH / clientSigImg.height, 1);
+      const w = clientSigImg.width * scale;
+      const h = clientSigImg.height * scale;
+      const x = 30 + (260 - w) / 2;
+      const y = 96 + (46 - h) / 2;
+      page1.drawImage(clientSigImg, { x, y, width: w, height: h });
+    }
+
     page1.drawLine({ start: { x: 45, y: 95 }, end: { x: 275, y: 95 }, color: rgb(0.7, 0.7, 0.7), thickness: 1 });
     page1.drawText(data.owner_name || 'Cliente', { x: 45, y: 82, size: 8, font: helvetica });
 
     page1.drawRectangle({ x: 320, y: 70, width: 262, height: 90, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1 });
     page1.drawText('FIRMA DEL TÉCNICO RECEPTOR', { x: 330, y: 145, size: 8, font: helveticaBold });
+
+    if (mechanicSigImg) {
+      const maxW = 210;
+      const maxH = 44;
+      const scale = Math.min(maxW / mechanicSigImg.width, maxH / mechanicSigImg.height, 1);
+      const w = mechanicSigImg.width * scale;
+      const h = mechanicSigImg.height * scale;
+      const x = 320 + (262 - w) / 2;
+      const y = 96 + (46 - h) / 2;
+      page1.drawImage(mechanicSigImg, { x, y, width: w, height: h });
+    }
+
     page1.drawLine({ start: { x: 335, y: 95 }, end: { x: 565, y: 95 }, color: rgb(0.7, 0.7, 0.7), thickness: 1 });
-    page1.drawText(data.received_by || 'Taller Integrale$ 360 Garage C.A.', { x: 335, y: 82, size: 8, font: helvetica });
+    page1.drawText(data.received_by || data.assigned_technician || 'Taller Integrale$ 360 Garage C.A.', { x: 335, y: 82, size: 8, font: helvetica });
 
     page1.drawText('Página 1 de 2 • Taller Integrale$ 360 Garage C.A.', { x: width - 240, y: 40, size: 7, font: helvetica, color: rgb(0.5, 0.5, 0.5) });
 

@@ -31,6 +31,8 @@ export const ENTITY_REGISTRY: Record<string, any> = {
     'GestionTallerProd_suppliers': GestionTallerProdSuppliers,
     'GestionTallerProd_vehicles': GestionTallerProdVehicles,
     'GestionTallerProd_vehicle_receipts': GestionTallerProdVehicleReceipts,
+    'vehicle_receipts': GestionTallerProdVehicleReceipts,
+    'receipts': GestionTallerProdVehicleReceipts,
     'GestionTallerProd_client_history': GestionTallerProdClientHistory,
     'GestionTallerProd_quotes': GestionTallerProdQuotes,
     'GestionTallerProd_quote_items': GestionTallerProdQuoteItems,
