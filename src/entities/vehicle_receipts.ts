@@ -19,10 +19,15 @@ export class GestionTallerProdVehicleReceipts {
             const eArr = (Array.isArray(event.employees_fk_id) ? event.employees_fk_id : [event.employees_fk_id]).filter(Boolean);
             if (eArr.length > 0) obj_fk.push({ employees: eArr });
         }
+        if (event.clients_fk_id) {
+            const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
+            if (cArr.length > 0) obj_fk.push({ clients: cArr });
+        }
 
         return {
             db, table: 'vehicle_receipts',
             attribute: {
+                receipt_number: event.receipt_number || '',
                 entry_date: event.entry_date || '',
                 owner_name: event.owner_name || '',
                 owner_tax_id: event.owner_tax_id || '',
@@ -47,6 +52,15 @@ export class GestionTallerProdVehicleReceipts {
                 pending_issues: event.pending_issues || '',
                 delivery_date: event.delivery_date || '',
                 expected_return_date: event.expected_return_date || '',
+                fuel_level: event.fuel_level || '',
+                status: event.status || 'proceso',
+                observations: event.observations || '',
+                checklist_external: event.checklist_external ? (typeof event.checklist_external === 'string' ? event.checklist_external : JSON.stringify(event.checklist_external)) : '',
+                checklist_internal: event.checklist_internal ? (typeof event.checklist_internal === 'string' ? event.checklist_internal : JSON.stringify(event.checklist_internal)) : '',
+                damage_points: event.damage_points ? (typeof event.damage_points === 'string' ? event.damage_points : JSON.stringify(event.damage_points)) : '',
+                authorized_services: event.authorized_services || '',
+                client_signature: event.client_signature || '',
+                mechanic_signature: event.mechanic_signature || '',
             },
             obj_fk
         };
