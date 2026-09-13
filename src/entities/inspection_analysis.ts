@@ -1,5 +1,5 @@
 import { BaseEntityHelpers, MiddlewareSecurity, getDbName } from 'skd-grql';
-import { DB_VAR, baseEntityHelpers, middlewareSecurity } from '../config';
+import { DB_VAR, GEMINI_API_KEY, baseEntityHelpers, middlewareSecurity } from '../config';
 
 
 export class GestionTallerProdInspectionAnalysis {
@@ -42,7 +42,7 @@ export class GestionTallerProdInspectionAnalysis {
             return { error: { message: "No video URL provided for analysis" }, statusCode: 400 };
         }
 
-        const geminiKey: string = event.gemini_api_key || '';
+        const geminiKey: string = event.gemini_api_key || GEMINI_API_KEY;
         if (!geminiKey) {
             return { error: { message: "gemini_api_key is required" }, statusCode: 400 };
         }

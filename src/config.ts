@@ -1,4 +1,36 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { BaseEntityHelpers, MiddlewareSecurity } from 'skd-grql';
+
+// Automatically load .env if running standalone or in test environments
+try {
+    const envCandidatePaths = [
+        path.resolve(__dirname, '..', '.env'),
+        path.resolve(process.cwd(), '.env')
+    ];
+    for (const envPath of envCandidatePaths) {
+        if (fs.existsSync(envPath)) {
+            const raw = fs.readFileSync(envPath, 'utf-8');
+            for (const line of raw.split(/\r?\n/)) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) continue;
+                const eqIdx = trimmed.indexOf('=');
+                if (eqIdx > 0) {
+                    const k = trimmed.substring(0, eqIdx).trim();
+                    let v = trimmed.substring(eqIdx + 1).trim();
+                    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                        v = v.slice(1, -1);
+                    }
+                    if (!process.env[k]) {
+                        process.env[k] = v;
+                    }
+                }
+            }
+            break;
+        }
+    }
+} catch { }
+
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -16,6 +48,8 @@ if (envKey) {
 
 export const DOMAIN_VAR = process.env.DOMAIN || DOMAIN;
 export let DB_VAR = DB_NAME;
+
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export function getDbNameWithEnv(): string {
     const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
