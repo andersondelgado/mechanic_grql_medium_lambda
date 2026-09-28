@@ -1,7 +1,11 @@
-import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
+import { getDbName } from 'skd-grql';
+import { DB_VAR, GEMINI_API_KEY, GEMINI_MODEL, baseEntityHelpers } from '../config';
 
 export class GeminiGarageCopilot {
     static table = 'gemini_copilot';
+
+    /** Límite de base64 inline (Gemini limita el request a ~20MB). */
+    static MAX_INLINE_BASE64_LENGTH = 14 * 1024 * 1024;
 
     static parseJsonCandidate(text: string): any {
         if (!text || typeof text !== 'string') return {};
@@ -140,6 +144,33 @@ export class GeminiGarageCopilot {
         return 'audio/mp4';
     }
 
+    /**
+     * Detecta el MIME del archivo a partir del base64 cuando el cliente no lo envía.
+     * Cubre los formatos soportados por Gemini (imagen / audio / video).
+     */
+    static detectMediaMimeType(base64: string, explicitMime?: string): string {
+        if (explicitMime && explicitMime.trim()) {
+            return explicitMime.trim();
+        }
+        if (!base64 || typeof base64 !== 'string') return 'image/jpeg';
+
+        const clean = base64.trim();
+        const head = clean.slice(0, 24);
+        if (head.startsWith('/9j/')) return 'image/jpeg';
+        if (head.startsWith('iVBOR')) return 'image/png';
+        if (head.startsWith('R0lGOD')) return 'image/gif';
+        // RIFF: WEBP (imagen) o WAVE (audio)
+        if (head.startsWith('UklGR')) return clean.includes('V0VC') ? 'image/webm' : 'audio/wav';
+        // MP4/ISO BMFF: "ftyp" aparece desplazado en el base64 como "G...Z0eXB"
+        if (head.startsWith('AAAA') && /G[A-Za-z0-9+\/]{0,2}Z0eXB/.test(clean.slice(0, 48))) return 'video/mp4';
+        // WebM / Ogg pueden contener video o audio: preferimos video (más común en peritajes)
+        if (head.startsWith('GkXf')) return 'video/webm';
+        if (head.startsWith('T2dn')) return 'video/ogg';
+        if (head.startsWith('SUQz') || head.startsWith('//O') || head.startsWith('//M')) return 'audio/mp3';
+        if (head.startsWith('/+4') || head.startsWith('/+8')) return 'audio/aac';
+        return 'image/jpeg';
+    }
+
     static async generate_draft_quote(event: any): Promise<any> {
         const payload = event?.body || event;
         const systemInstruction = `Eres un Asistente de Presupuestos de Taller Mecánico de Élite (Taller Integral 360 / Urbaez Motors).
@@ -205,6 +236,132 @@ Extrae y estructura la solicitud de trabajo en formato JSON estricto con los sig
         return GeminiGarageCopilot.callGeminiApi(systemInstruction, [{ parts }]);
     }
 
+    /**
+     * Peritaje multimedia: recibe un archivo convertido a base64 (imagen/audio/video)
+     * o una video_url ya subida a la nube, lo envía a Gemini multimodal y persiste el
+     * resultado en `inspection_analysis` (+ estado de la ficha a 'completado').
+     */
+    static async analyze_peritaje_media(event: any): Promise<any> {
+        const payload = event?.body || event;
+
+        const rawBase64 = payload.file_base64 || payload.image_base64 || payload.media_base64 || '';
+        const fileBase64 = typeof rawBase64 === 'string' ? rawBase64.replace(/^data:[^;,]+;base64,/i, '').trim() : '';
+        const videoUrl = typeof payload.video_url === 'string' ? payload.video_url.trim() : '';
+        const explicitMime = (payload.mime_type || payload.mimeType || '').toString().trim();
+
+        if (!fileBase64 && !videoUrl) {
+            return { error: { message: 'Debe enviar el archivo en base64 (file_base64) o una video_url.' }, statusCode: 400 };
+        }
+        if (fileBase64.length > GeminiGarageCopilot.MAX_INLINE_BASE64_LENGTH) {
+            return {
+                error: {
+                    message: 'El archivo en base64 supera el límite de envío inline (~10MB). Suba el video a la nube y envíe video_url.',
+                },
+                statusCode: 413,
+            };
+        }
+
+        const systemInstruction = `Eres un perito automotriz experto para Taller Integral 360.
+Analiza el material multimedia del vehículo (fotos, video o audio del peritaje) y devuelve JSON estricto con:
+- damage_type (string: tipo de daño detectado)
+- damage_severity (leve|moderado|severo)
+- affected_parts (array de strings: piezas afectadas)
+- repair_estimated_hours (number: horas de reparación)
+- parts_needed (array de strings: repuestos necesarios)
+- confidence_score (number 0-100)
+- observations (string: dictamen del perito)
+- recommended_actions (array de strings)`;
+
+        const parts: any[] = [];
+        if (fileBase64) {
+            const mimeType = GeminiGarageCopilot.detectMediaMimeType(fileBase64, explicitMime);
+            parts.push({ inlineData: { mimeType, data: fileBase64 } });
+        } else {
+            parts.push({ fileData: { fileUri: videoUrl, mimeType: explicitMime || 'video/mp4' } });
+        }
+
+        const context: string[] = [];
+        if (payload.prompt_context) {
+            context.push(`Contexto del peritaje:\n${payload.prompt_context}`);
+        }
+        if (payload.vehicle_context) {
+            context.push(
+                `Vehículo / cliente:\n${typeof payload.vehicle_context === 'string' ? payload.vehicle_context : JSON.stringify(payload.vehicle_context)}`
+            );
+        }
+        if (payload.observations) {
+            context.push(`Observaciones del inspector:\n${payload.observations}`);
+        }
+        parts.push({ text: context.join('\n\n') || 'Analiza el material adjunto del peritaje.' });
+
+        let analysisResult: any;
+        try {
+            const text = await GeminiGarageCopilot.generateContentText({
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                contents: [{ role: 'user', parts }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 4096,
+                    responseMimeType: 'application/json'
+                }
+            }, 2);
+            analysisResult = GeminiGarageCopilot.parseJsonCandidate(text);
+            if (analysisResult && !analysisResult.damage_type && analysisResult.raw_response) {
+                analysisResult = { ...analysisResult, observations: analysisResult.raw_response };
+            }
+        } catch (e: any) {
+            return { error: { message: e.message || 'Fallo al invocar Gemini para el peritaje' }, statusCode: 502 };
+        }
+
+        const analysis = {
+            damage_type: analysisResult.damage_type || 'otros',
+            damage_severity: analysisResult.damage_severity || 'moderado',
+            affected_parts: analysisResult.affected_parts || [],
+            repair_estimated_hours: Number(analysisResult.repair_estimated_hours || 0),
+            parts_needed: analysisResult.parts_needed || [],
+            confidence_score: Number(analysisResult.confidence_score || 0),
+            observations: analysisResult.observations || '',
+            recommended_actions: analysisResult.recommended_actions || [],
+            status: 'completado',
+        };
+
+        let analysisId: string | undefined;
+        if (payload.persist !== false && payload.persist !== 'false') {
+            try {
+                const db = getDbName(payload?.headerLambdaObject) || DB_VAR;
+                const cardId = payload.inspection_cards_fk_id || payload.inspection_cardsId || '';
+                const storeResult = await baseEntityHelpers.store('inspection_analysis', {
+                    db,
+                    table: 'inspection_analysis',
+                    attribute: analysis,
+                    obj_fk: cardId ? [{ inspection_cards: Array.isArray(cardId) ? cardId : [cardId] }] : [],
+                    headerLambda: payload.headerLambda,
+                    headerLambdaObject: payload.headerLambdaObject,
+                });
+                if (storeResult && !storeResult.error) {
+                    analysisId = storeResult.id;
+                    if (cardId && !Array.isArray(cardId)) {
+                        await baseEntityHelpers.update('inspection_cards', cardId, {
+                            db, table: 'inspection_cards',
+                            attribute: { status: 'completado' },
+                            headerLambda: payload.headerLambda,
+                            headerLambdaObject: payload.headerLambdaObject,
+                        });
+                    }
+                }
+            } catch {
+                // No se rompe la respuesta si falla el persist (la IA ya devolvió el dictamen)
+            }
+        }
+
+        return {
+            success: true,
+            analysis,
+            analysis_id: analysisId,
+            source: fileBase64 ? 'base64' : 'video_url',
+        };
+    }
+
     static async suggest_parts(event: any): Promise<any> {
         const payload = event?.body || event;
         const systemInstruction = `Eres un recomendador de repuestos automotrices experto para Taller Integral 360. Devuelve un array JSON de objetos con { code, description, quantity, estimated_price, supplier, urgency } para los 5 repuestos más probables según los síntomas.`;
@@ -229,6 +386,8 @@ Extrae y estructura la solicitud de trabajo en formato JSON estricto con los sig
         if (!action && payload && typeof payload === 'object') {
             if (payload.audio_base64 || payload.text_notes || payload.vehicle_info) {
                 action = 'generate_draft_quote';
+            } else if (payload.file_base64 || payload.media_base64 || payload.video_url || payload.inspection_cards_fk_id) {
+                action = 'analyze_peritaje_media';
             } else if (payload.image_base64 || payload.prompt_context) {
                 action = 'analyze_document';
             } else if (payload.symptoms || payload.technical_impression || payload.diagnostic_impression) {
@@ -238,6 +397,7 @@ Extrae y estructura la solicitud de trabajo en formato JSON estricto con los sig
 
         if (action === 'generate_draft_quote') return GeminiGarageCopilot.generate_draft_quote(payload);
         if (action === 'analyze_document') return GeminiGarageCopilot.analyze_document(payload);
+        if (action === 'analyze_peritaje_media') return GeminiGarageCopilot.analyze_peritaje_media(payload);
         if (action === 'suggest_parts') return GeminiGarageCopilot.suggest_parts(payload);
         throw new Error(`Acción desconocida en GeminiGarageCopilot: ${action || JSON.stringify(actionOrParams)}`);
     }
