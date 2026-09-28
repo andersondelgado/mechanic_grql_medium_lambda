@@ -23,7 +23,8 @@ import {
     GestionTallerProdInspectionVideo,
     GestionTallerProdInspectionAnalysis,
     GestionTallerProdCatalogState,
-    GestionTallerProdStats
+    GestionTallerProdStats,
+    GeminiGarageCopilot
 } from './entities';
 
 export const ENTITY_REGISTRY: Record<string, any> = {
@@ -60,5 +61,12 @@ export const ENTITY_REGISTRY: Record<string, any> = {
     'vehicle_brands_models': GestionTallerProdCatalogState,
     'vehicle_types': GestionTallerProdCatalogState,
     'GestionTallerProd_stats': GestionTallerProdStats,
-    'stats': GestionTallerProdStats
+    'stats': GestionTallerProdStats,
+
+    // Gemini AI Copilot de Taller
+    'gemini_copilot': GeminiGarageCopilot,
+    'GestionTallerProd_gemini_copilot': GeminiGarageCopilot,
+    'copilot': GeminiGarageCopilot,
+    'geminiCopilot': GeminiGarageCopilot,
+    'GeminiGarageCopilot': GeminiGarageCopilot
 };

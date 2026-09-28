@@ -23,3 +23,4 @@ export * from './inspection_video';
 export * from './inspection_analysis';
 export * from './catalog_state';
 export * from './stats';
+export * from './gemini_copilot';

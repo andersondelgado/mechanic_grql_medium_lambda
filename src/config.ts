@@ -6,7 +6,9 @@ import { BaseEntityHelpers, MiddlewareSecurity } from 'skd-grql';
 try {
     const envCandidatePaths = [
         path.resolve(__dirname, '..', '.env'),
-        path.resolve(process.cwd(), '.env')
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(__dirname, '..', '.env.production'),
+        path.resolve(process.cwd(), '.env.production')
     ];
     for (const envPath of envCandidatePaths) {
         if (fs.existsSync(envPath)) {
@@ -49,7 +51,8 @@ if (envKey) {
 export const DOMAIN_VAR = process.env.DOMAIN || DOMAIN;
 export let DB_VAR = DB_NAME;
 
-export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
 export function getDbNameWithEnv(): string {
     const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';

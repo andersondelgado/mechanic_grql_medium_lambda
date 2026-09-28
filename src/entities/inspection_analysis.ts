@@ -1,5 +1,6 @@
 import { BaseEntityHelpers, MiddlewareSecurity, getDbName } from 'skd-grql';
 import { DB_VAR, GEMINI_API_KEY, baseEntityHelpers, middlewareSecurity } from '../config';
+import { GeminiGarageCopilot } from './gemini_copilot';
 
 
 export class GestionTallerProdInspectionAnalysis {
@@ -48,35 +49,20 @@ export class GestionTallerProdInspectionAnalysis {
         }
 
         try {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            role: 'user',
-                            parts: [
-                                { fileData: { fileUri: videoUrl, mimeType: event.file_mime_type || 'video/mp4' } },
-                                { text: 'Eres un perito automotriz experto. Analiza el video del vehiculo y devuelve JSON estricto con: damage_type, damage_severity (leve|moderado|severo), affected_parts (array), repair_estimated_hours (number), parts_needed (array), confidence_score (0-100), observations, recommended_actions (array).' }
-                            ]
-                        }],
-                        generationConfig: {
-                            temperature: 0.1,
-                            maxOutputTokens: 4096,
-                            responseMimeType: 'application/json'
-                        }
-                    })
+            const text = await GeminiGarageCopilot.generateContentText({
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { fileData: { fileUri: videoUrl, mimeType: event.file_mime_type || 'video/mp4' } },
+                        { text: 'Eres un perito automotriz experto. Analiza el video del vehiculo y devuelve JSON estricto con: damage_type, damage_severity (leve|moderado|severo), affected_parts (array), repair_estimated_hours (number), parts_needed (array), confidence_score (0-100), observations, recommended_actions (array).' }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 4096,
+                    responseMimeType: 'application/json'
                 }
-            );
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                return { error: { message: `Gemini API error: ${response.status} - ${errorText}` }, statusCode: response.status };
-            }
-
-            const geminiData = await response.json();
-            const text = geminiData?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('') || '';
+            }, 2, event.gemini_api_key || undefined);
 
             let analysisResult: any = {};
             try {
