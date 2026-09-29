@@ -1,5 +1,5 @@
 import { getDbName } from 'skd-grql';
-import { DB_VAR, GEMINI_API_KEY, GEMINI_MODEL, baseEntityHelpers } from '../config';
+import { API_KEY, API_KEY_VAR, DB_VAR, DOMAIN, GEMINI_API_KEY, GEMINI_MODEL, baseEntityHelpers } from '../config';
 
 export class GeminiGarageCopilot {
     static table = 'gemini_copilot';
@@ -171,6 +171,73 @@ export class GeminiGarageCopilot {
         return 'image/jpeg';
     }
 
+    /** MIME por extensión cuando sólo se conoce la URL del archivo. */
+    static detectUrlMimeType(url: string): string {
+        const clean = (url || '').split('?')[0].toLowerCase();
+        if (clean.endsWith('.png')) return 'image/png';
+        if (clean.endsWith('.webp')) return 'image/webp';
+        if (clean.endsWith('.gif')) return 'image/gif';
+        if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+        if (clean.endsWith('.mov')) return 'video/quicktime';
+        if (clean.endsWith('.webm')) return 'video/webm';
+        if (clean.endsWith('.mkv')) return 'video/x-matroska';
+        if (clean.endsWith('.mp3')) return 'audio/mpeg';
+        if (clean.endsWith('.wav')) return 'audio/wav';
+        return 'video/mp4';
+    }
+
+    /**
+     * Id del archivo binario subido al bucket por multipart
+     * (`lambdas-formData-run-node-v1`): `injectFileMeta` lo inyecta en el body
+     * como `attachment_file` / `attachmentId` / `fileMetas[0].id`.
+     */
+    static resolveBucketFileId(payload: any): string {
+        const candidates = [
+            payload?.bucket_file_id,
+            payload?.attachment_file,
+            payload?.attachmentId,
+            payload?.attachment_id,
+            payload?.attachment,
+            typeof payload?.file_meta === 'object' ? payload?.file_meta?.id : payload?.file_meta,
+            typeof payload?.fileMeta === 'object' ? payload?.fileMeta?.id : undefined,
+            Array.isArray(payload?.fileMetas) ? payload.fileMetas[0]?.id : undefined,
+        ];
+        for (const value of candidates) {
+            if (typeof value !== 'string') continue;
+            const clean = value.trim();
+            if (!clean || clean.startsWith('data:') || /^https?:\/\//i.test(clean)) continue;
+            return clean;
+        }
+        return '';
+    }
+
+    /**
+     * URL de descarga del archivo en el bucket (verificada: 200 OK).
+     * `tokenAuth` espera la API key **decodificada** (no la versión base64).
+     */
+    static buildBucketPullUrl(db: string, fileId: string): string {
+        const token = Buffer.from(API_KEY_VAR || API_KEY, 'base64').toString('utf-8');
+        return `${DOMAIN}/api/secure-rQL/bucket-to-pull-queryToken-no-cache`
+            + `?db=${encodeURIComponent(db)}`
+            + `&table=bucket`
+            + `&id=${encodeURIComponent(fileId)}`
+            + `&tokenAuth=${encodeURIComponent(token)}`;
+    }
+
+    /** Descarga el archivo del bucket por el lado del servidor (fallback si Gemini no puede traer la URL). */
+    static async downloadBucketFile(url: string, fallbackMime?: string): Promise<{ base64: string; mimeType: string }> {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`No se pudo descargar el archivo del bucket (HTTP ${response.status})`);
+        }
+        const buffer = Buffer.from(await response.arrayBuffer());
+        let mimeType = String(response.headers.get('content-type') || '').split(';')[0].trim();
+        if (!mimeType || mimeType === 'application/octet-stream' || mimeType.startsWith('text/')) {
+            mimeType = fallbackMime || 'image/jpeg';
+        }
+        return { base64: buffer.toString('base64'), mimeType };
+    }
+
     static async generate_draft_quote(event: any): Promise<any> {
         const payload = event?.body || event;
         const systemInstruction = `Eres un Asistente de Presupuestos de Taller Mecánico de Élite (Taller Integral 360 / Urbaez Motors).
@@ -237,9 +304,10 @@ Extrae y estructura la solicitud de trabajo en formato JSON estricto con los sig
     }
 
     /**
-     * Peritaje multimedia: recibe un archivo convertido a base64 (imagen/audio/video)
-     * o una video_url ya subida a la nube, lo envía a Gemini multimodal y persiste el
-     * resultado en `inspection_analysis` (+ estado de la ficha a 'completado').
+     * Peritaje multimedia: recibe un archivo convertido a base64 (imagen/audio/video),
+     * una video_url ya subida a la nube, o el id de un archivo subido por multipart
+     * (`attachment_file` / `fileMetas[0].id`); lo envía a Gemini multimodal y persiste
+     * el resultado en `inspection_analysis` (+ estado de la ficha a 'completado').
      */
     static async analyze_peritaje_media(event: any): Promise<any> {
         const payload = event?.body || event;
@@ -247,19 +315,31 @@ Extrae y estructura la solicitud de trabajo en formato JSON estricto con los sig
         const rawBase64 = payload.file_base64 || payload.image_base64 || payload.media_base64 || '';
         const fileBase64 = typeof rawBase64 === 'string' ? rawBase64.replace(/^data:[^;,]+;base64,/i, '').trim() : '';
         const videoUrl = typeof payload.video_url === 'string' ? payload.video_url.trim() : '';
-        const explicitMime = (payload.mime_type || payload.mimeType || '').toString().trim();
+        const bucketFileId = GeminiGarageCopilot.resolveBucketFileId(payload);
+        const metaMime = Array.isArray(payload?.fileMetas) && payload.fileMetas[0]?.type
+            ? String(payload.fileMetas[0].type)
+            : '';
+        const explicitMime = (payload.mime_type || payload.mimeType || metaMime).toString().trim();
 
-        if (!fileBase64 && !videoUrl) {
-            return { error: { message: 'Debe enviar el archivo en base64 (file_base64) o una video_url.' }, statusCode: 400 };
+        if (!fileBase64 && !videoUrl && !bucketFileId) {
+            return {
+                error: { message: 'Debe enviar el archivo en base64 (file_base64), una video_url o subirlo como archivo adjunto.' },
+                statusCode: 400,
+            };
         }
         if (fileBase64.length > GeminiGarageCopilot.MAX_INLINE_BASE64_LENGTH) {
             return {
                 error: {
-                    message: 'El archivo en base64 supera el límite de envío inline (~10MB). Suba el video a la nube y envíe video_url.',
+                    message: 'El archivo en base64 supera el límite de envío inline (~10MB). Suba el archivo como adjunto (upload binario) y reintente.',
                 },
                 statusCode: 413,
             };
         }
+
+        const db = getDbName(payload?.headerLambdaObject) || DB_VAR;
+        const bucketFileUrl = bucketFileId ? GeminiGarageCopilot.buildBucketPullUrl(db, bucketFileId) : '';
+        const source: 'base64' | 'video_url' | 'bucket_file' = fileBase64 ? 'base64' : (bucketFileId ? 'bucket_file' : 'video_url');
+        const mediaUrl = videoUrl || bucketFileUrl;
 
         const systemInstruction = `Eres un perito automotriz experto para Taller Integral 360.
 Analiza el material multimedia del vehículo (fotos, video o audio del peritaje) y devuelve JSON estricto con:
@@ -272,13 +352,9 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
 - observations (string: dictamen del perito)
 - recommended_actions (array de strings)`;
 
-        const parts: any[] = [];
-        if (fileBase64) {
-            const mimeType = GeminiGarageCopilot.detectMediaMimeType(fileBase64, explicitMime);
-            parts.push({ inlineData: { mimeType, data: fileBase64 } });
-        } else {
-            parts.push({ fileData: { fileUri: videoUrl, mimeType: explicitMime || 'video/mp4' } });
-        }
+        const mediaPart: any = fileBase64
+            ? { inlineData: { mimeType: GeminiGarageCopilot.detectMediaMimeType(fileBase64, explicitMime), data: fileBase64 } }
+            : { fileData: { fileUri: mediaUrl, mimeType: explicitMime || GeminiGarageCopilot.detectUrlMimeType(mediaUrl) } };
 
         const context: string[] = [];
         if (payload.prompt_context) {
@@ -292,25 +368,47 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
         if (payload.observations) {
             context.push(`Observaciones del inspector:\n${payload.observations}`);
         }
-        parts.push({ text: context.join('\n\n') || 'Analiza el material adjunto del peritaje.' });
+        const textPrompt = context.join('\n\n') || 'Analiza el material adjunto del peritaje.';
+
+        const buildRequestBody = () => ({
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: 'user', parts: [mediaPart, { text: textPrompt }] }],
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 4096,
+                responseMimeType: 'application/json'
+            }
+        });
 
         let analysisResult: any;
         try {
-            const text = await GeminiGarageCopilot.generateContentText({
-                systemInstruction: { parts: [{ text: systemInstruction }] },
-                contents: [{ role: 'user', parts }],
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 4096,
-                    responseMimeType: 'application/json'
-                }
-            }, 2);
-            analysisResult = GeminiGarageCopilot.parseJsonCandidate(text);
-            if (analysisResult && !analysisResult.damage_type && analysisResult.raw_response) {
-                analysisResult = { ...analysisResult, observations: analysisResult.raw_response };
-            }
+            analysisResult = GeminiGarageCopilot.parseJsonCandidate(
+                await GeminiGarageCopilot.generateContentText(buildRequestBody(), 2)
+            );
         } catch (e: any) {
-            return { error: { message: e.message || 'Fallo al invocar Gemini para el peritaje' }, statusCode: 502 };
+            let lastError = e;
+            if (bucketFileUrl) {
+                // Gemini no pudo leer la URL del bucket: descarga en el servidor y reenvía inline
+                try {
+                    const downloaded = await GeminiGarageCopilot.downloadBucketFile(bucketFileUrl, explicitMime);
+                    if (downloaded.base64.length > GeminiGarageCopilot.MAX_INLINE_BASE64_LENGTH) {
+                        throw new Error('El archivo subido supera el límite inline (~10MB) para analizarlo con Gemini.');
+                    }
+                    delete mediaPart.fileData;
+                    mediaPart.inlineData = { mimeType: downloaded.mimeType, data: downloaded.base64 };
+                    analysisResult = GeminiGarageCopilot.parseJsonCandidate(
+                        await GeminiGarageCopilot.generateContentText(buildRequestBody(), 2)
+                    );
+                } catch (e2: any) {
+                    lastError = e2;
+                }
+            }
+            if (!analysisResult) {
+                return { error: { message: lastError.message || 'Fallo al invocar Gemini para el peritaje' }, statusCode: 502 };
+            }
+        }
+        if (analysisResult && !analysisResult.damage_type && analysisResult.raw_response) {
+            analysisResult = { ...analysisResult, observations: analysisResult.raw_response };
         }
 
         const analysis = {
@@ -328,7 +426,6 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
         let analysisId: string | undefined;
         if (payload.persist !== false && payload.persist !== 'false') {
             try {
-                const db = getDbName(payload?.headerLambdaObject) || DB_VAR;
                 const cardId = payload.inspection_cards_fk_id || payload.inspection_cardsId || '';
                 const storeResult = await baseEntityHelpers.store('inspection_analysis', {
                     db,
@@ -358,7 +455,8 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
             success: true,
             analysis,
             analysis_id: analysisId,
-            source: fileBase64 ? 'base64' : 'video_url',
+            file_id: bucketFileId || undefined,
+            source,
         };
     }
 

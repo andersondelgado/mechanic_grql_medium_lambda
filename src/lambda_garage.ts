@@ -17,7 +17,7 @@ async function main() {
         refreshHelpers();
         clearFkCache();
 
-        const flows = event.request?.flows || [];
+        const flows = event.request?.flows || event.flows || [];
         const flow = flows.find((f: any) => f.name === "workflow_taller")
             || flows[0];
         const output: Record<string, any> = {};
