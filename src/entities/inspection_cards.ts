@@ -19,6 +19,10 @@ export class GestionTallerProdInspectionCards {
             const eArr = (Array.isArray(event.employees_fk_id) ? event.employees_fk_id : [event.employees_fk_id]).filter(Boolean);
             if (eArr.length > 0) obj_fk.push({ employees: eArr });
         }
+        if (event.clients_fk_id) {
+            const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
+            if (cArr.length > 0) obj_fk.push({ clients: cArr });
+        }
 
         return {
             db, table: 'inspection_cards',
@@ -27,8 +31,10 @@ export class GestionTallerProdInspectionCards {
                 inspection_date: event.inspection_date || '',
                 item_name: event.item_name || '',
                 check_yes: event.check_yes || false,
-                check_no: event.check_no || true,
+                check_no: event.check_no || false,
                 observations: event.observations || '',
+                status: event.status || 'pending',
+                cost_estimate: Number(event.cost_estimate || 0),
             },
             obj_fk
         };

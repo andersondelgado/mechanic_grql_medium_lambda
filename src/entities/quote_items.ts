@@ -19,15 +19,15 @@ export class GestionTallerProdQuoteItems {
         return {
             db, table: 'quote_items',
             attribute: {
-                item_number: event.item_number || '',
+                item_number: event.item_number != null && event.item_number !== '' ? Number(event.item_number) : 0,
                 description: event.description || '',
-                quantity: event.quantity || '',
-                unit_price: event.unit_price || '',
-                total_price: event.total_price || '',
+                quantity: Number(event.quantity || 0),
+                unit_price: Number(event.unit_price || 0),
+                total_price: Number(event.total_price || 0),
                 supplier_store: event.supplier_store || '',
                 product_name: event.product_name || '',
                 product_brand: event.product_brand || '',
-                product_price: event.product_price || '',
+                product_price: Number(event.product_price || 0),
             },
             obj_fk
         };

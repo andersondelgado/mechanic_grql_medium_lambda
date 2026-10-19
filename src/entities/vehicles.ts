@@ -22,7 +22,7 @@ export class GestionTallerProdVehicles {
                 license_plate: event.license_plate || '',
                 brand: event.brand || '',
                 model: event.model || '',
-                year: event.year || '',
+                year: event.year != null && event.year !== '' ? Number(event.year) : 0,
                 color: event.color || '',
                 mileage: event.mileage || '',
                 vehicle_type: event.vehicle_type || '',

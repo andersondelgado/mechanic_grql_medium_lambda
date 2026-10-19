@@ -105,4 +105,35 @@ export class GestionTallerProdInspectionAnalysis {
             return { error: { message: e.message || "Analysis failed" }, statusCode: 500 };
         }
     }
+
+    static async store(event: any, helpers?: BaseEntityHelpers, sec?: MiddlewareSecurity): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        const payload = GestionTallerProdInspectionAnalysis.build_payload(event);
+        return h.store('inspection_analysis', payload);
+    }
+
+    static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.update('inspection_analysis', id, GestionTallerProdInspectionAnalysis.build_payload(event));
+    }
+
+    static async delete(event: any, id: string, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.delete('inspection_analysis', id, event);
+    }
+
+    static async data_filter(event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.data_filter('inspection_analysis', event);
+    }
+
+    static async paginate(event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.paginate('inspection_analysis', event);
+    }
+
+    static async count(event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.count('inspection_analysis', event);
+    }
 }

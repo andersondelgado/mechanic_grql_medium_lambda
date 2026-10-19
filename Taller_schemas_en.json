@@ -1,0 +1,666 @@
+[
+  {
+    "db": "GestionTallerProd",
+    "table": "clients",
+    "pk": "client_id",
+    "uq": [
+      "tax_id",
+      "cell_phone"
+    ],
+    "fk": [],
+    "required": [
+      "client_name",
+      "tax_id"
+    ],
+    "attribute": {
+      "client_id": "string",
+      "client_name": "string",
+      "tax_id": "string",
+      "cell_phone": "string",
+      "home_phone": "string",
+      "email": "string",
+      "address": "string",
+      "registration_date": "datetime"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "suppliers",
+    "pk": "supplier_id",
+    "uq": [
+      "supplier_name",
+      "email"
+    ],
+    "fk": [],
+    "required": [
+      "supplier_name"
+    ],
+    "attribute": {
+      "supplier_id": "string",
+      "supplier_name": "string",
+      "contact_person": "string",
+      "address": "string",
+      "cell_phone": "string",
+      "office_phone": "string",
+      "email": "string",
+      "distributes_parts": "string",
+      "transport": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "vehicles",
+    "pk": "vehicle_id",
+    "uq": [
+      "license_plate"
+    ],
+    "fk": [
+      "clients_fk_id"
+    ],
+    "required": [
+      "license_plate",
+      "brand"
+    ],
+    "attribute": {
+      "vehicle_id": "string",
+      "clients_fk_id": "string",
+      "license_plate": "string",
+      "brand": "string",
+      "model": "string",
+      "year": "integer",
+      "color": "string",
+      "mileage": "string",
+      "vehicle_type": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "vehicle_receipts",
+    "pk": "receipt_id",
+    "uq": [
+      "license_plate",
+      "entry_date"
+    ],
+    "fk": [
+      "vehicles_fk_id",
+      "employees_fk_id",
+      "clients_fk_id"
+    ],
+    "required": [
+      "entry_date",
+      "license_plate",
+      "brand",
+      "model"
+    ],
+    "attribute": {
+      "receipt_id": "string",
+      "vehicles_fk_id": "string",
+      "employees_fk_id": "string",
+      "entry_date": "datetime",
+      "owner_name": "string",
+      "owner_tax_id": "string",
+      "phone": "string",
+      "brand": "string",
+      "model": "string",
+      "license_plate": "string",
+      "color": "string",
+      "mileage": "string",
+      "exit_date": "datetime",
+      "receiving_technician": "string",
+      "reception_service": "string",
+      "address": "string",
+      "received_by": "string",
+      "delivered_by": "string",
+      "delivery_address": "string",
+      "assigned_technician": "string",
+      "time_in_shop": "string",
+      "reason_for_entry": "string",
+      "work_performed": "string",
+      "must_return": "boolean",
+      "pending_issues": "string",
+      "delivery_date": "datetime",
+      "expected_return_date": "datetime",
+      "clients_fk_id": "string",
+      "receipt_number": "string",
+      "fuel_level": "string",
+      "status": "string",
+      "observations": "string",
+      "checklist_external": "string",
+      "checklist_internal": "string",
+      "damage_points": "string",
+      "authorized_services": "string",
+      "client_signature": "string",
+      "mechanic_signature": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "client_history",
+    "pk": "history_id",
+    "uq": [],
+    "fk": [
+      "vehicles_fk_id",
+      "employees_fk_id"
+    ],
+    "required": [
+      "vehicles_fk_id",
+      "service_date"
+    ],
+    "attribute": {
+      "history_id": "string",
+      "vehicles_fk_id": "string",
+      "employees_fk_id": "string",
+      "service_date": "datetime",
+      "work_performed": "string",
+      "assigned_mechanic": "string",
+      "time_in_shop": "string",
+      "observations": "string",
+      "total_cost": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "quotes",
+    "pk": "quote_id",
+    "uq": [
+      "quote_number"
+    ],
+    "fk": [
+      "vehicles_fk_id",
+      "clients_fk_id"
+    ],
+    "required": [
+      "quote_date",
+      "client_name",
+      "brand",
+      "model"
+    ],
+    "attribute": {
+      "quote_id": "string",
+      "vehicles_fk_id": "string",
+      "clients_fk_id": "string",
+      "quote_number": "string",
+      "quote_date": "datetime",
+      "client_name": "string",
+      "tax_id": "string",
+      "vehicle_type": "string",
+      "brand": "string",
+      "model": "string",
+      "address": "string",
+      "license_plate": "string",
+      "year": "integer",
+      "subtotal": "number",
+      "total": "number",
+      "status": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "quote_items",
+    "pk": "quote_item_id",
+    "uq": [],
+    "fk": [
+      "quotes_fk_id"
+    ],
+    "required": [
+      "quotes_fk_id",
+      "description"
+    ],
+    "attribute": {
+      "quote_item_id": "string",
+      "quotes_fk_id": "string",
+      "item_number": "integer",
+      "description": "string",
+      "quantity": "number",
+      "unit_price": "number",
+      "total_price": "number",
+      "supplier_store": "string",
+      "product_name": "string",
+      "product_brand": "string",
+      "product_price": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "accounts_receivable",
+    "pk": "ar_id",
+    "uq": [],
+    "fk": [
+      "clients_fk_id"
+    ],
+    "required": [
+      "transaction_date",
+      "description"
+    ],
+    "attribute": {
+      "ar_id": "string",
+      "clients_fk_id": "string",
+      "transaction_date": "datetime",
+      "payment_date": "datetime",
+      "description": "string",
+      "debit": "number",
+      "credit": "number",
+      "balance": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "accounts_payable",
+    "pk": "ap_id",
+    "uq": [],
+    "fk": [
+      "suppliers_fk_id"
+    ],
+    "required": [
+      "transaction_date",
+      "description"
+    ],
+    "attribute": {
+      "ap_id": "string",
+      "suppliers_fk_id": "string",
+      "transaction_date": "datetime",
+      "payment_date": "datetime",
+      "description": "string",
+      "debit": "number",
+      "credit": "number",
+      "balance": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "financial_transactions",
+    "pk": "transaction_id",
+    "uq": [],
+    "fk": [],
+    "required": [
+      "transaction_date",
+      "description"
+    ],
+    "attribute": {
+      "transaction_id": "string",
+      "month": "string",
+      "transaction_date": "datetime",
+      "description": "string",
+      "minor_rep_income": "number",
+      "major_rep_income": "number",
+      "other_income": "number",
+      "salary_expense": "number",
+      "rent_expense": "number",
+      "supplies_expense": "number",
+      "tools_equipment_expense": "number",
+      "other_expenses": "number",
+      "total_expenses": "number",
+      "total_amount": "number",
+      "exchange_rate": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "parts_catalog",
+    "pk": "part_id",
+    "uq": [
+      "part_code"
+    ],
+    "fk": [],
+    "required": [
+      "part_code",
+      "description"
+    ],
+    "attribute": {
+      "part_id": "string",
+      "part_code": "string",
+      "description": "string",
+      "brand": "string",
+      "price_without_tax": "number",
+      "stock_main": "integer",
+      "stock_caracas": "integer",
+      "discount_1": "number",
+      "discounted_price_1": "number",
+      "discount_2": "number",
+      "final_discounted_price": "number",
+      "final_discount": "number",
+      "price_by_rubro": "number",
+      "bs_to_uro": "number",
+      "category": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "pending_purchases",
+    "pk": "pending_purchase_id",
+    "uq": [],
+    "fk": [
+      "suppliers_fk_id"
+    ],
+    "required": [
+      "info_date",
+      "product_name"
+    ],
+    "attribute": {
+      "pending_purchase_id": "string",
+      "suppliers_fk_id": "string",
+      "info_date": "datetime",
+      "purchase_date": "datetime",
+      "product_name": "string",
+      "supplier_name": "string",
+      "purchased": "boolean",
+      "quantity": "number",
+      "unit_price": "number",
+      "notes": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "employees",
+    "pk": "employee_id",
+    "uq": [
+      "employee_name",
+      "tax_id"
+    ],
+    "fk": [],
+    "required": [
+      "employee_name",
+      "tax_id"
+    ],
+    "attribute": {
+      "employee_id": "string",
+      "employee_name": "string",
+      "tax_id": "string",
+      "phone": "string",
+      "address": "string",
+      "hire_date": "datetime",
+      "employee_type": "string",
+      "salary": "number",
+      "email": "string",
+      "contract_type": "string",
+      "position": "string",
+      "is_mechanic": "boolean"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "delivery_notes",
+    "pk": "delivery_note_id",
+    "uq": [
+      "note_number"
+    ],
+    "fk": [
+      "vehicles_fk_id",
+      "clients_fk_id"
+    ],
+    "required": [
+      "note_date",
+      "client_name"
+    ],
+    "attribute": {
+      "delivery_note_id": "string",
+      "vehicles_fk_id": "string",
+      "clients_fk_id": "string",
+      "note_number": "string",
+      "note_date": "datetime",
+      "client_name": "string",
+      "tax_id": "string",
+      "vehicle_type": "string",
+      "brand": "string",
+      "model": "string",
+      "license_plate": "string",
+      "subtotal": "number",
+      "total": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "delivery_note_items",
+    "pk": "note_item_id",
+    "uq": [],
+    "fk": [
+      "delivery_notes_fk_id"
+    ],
+    "required": [
+      "delivery_notes_fk_id",
+      "description"
+    ],
+    "attribute": {
+      "note_item_id": "string",
+      "delivery_notes_fk_id": "string",
+      "item_number": "integer",
+      "description": "string",
+      "quantity": "number",
+      "unit_price": "number",
+      "labor_cost": "number",
+      "total_price": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "inspection_cards",
+    "pk": "card_id",
+    "uq": [],
+    "fk": [
+      "vehicles_fk_id",
+      "clients_fk_id",
+      "employees_fk_id"
+    ],
+    "required": [
+      "inspection_type",
+      "inspection_date"
+    ],
+    "attribute": {
+      "card_id": "string",
+      "vehicles_fk_id": "string",
+      "inspection_type": "string",
+      "inspection_date": "datetime",
+      "item_name": "string",
+      "check_yes": "boolean",
+      "check_no": "boolean",
+      "observations": "string",
+      "clients_fk_id": "string",
+      "employees_fk_id": "string",
+      "status": "string",
+      "cost_estimate": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "body_shop_materials",
+    "pk": "material_id",
+    "uq": [
+      "piece_name"
+    ],
+    "fk": [],
+    "required": [
+      "piece_name"
+    ],
+    "attribute": {
+      "material_id": "string",
+      "piece_name": "string",
+      "material_usage_qty": "number",
+      "labor_cost": "number",
+      "paint_amount": "number",
+      "hardener": "string",
+      "filler": "string",
+      "reducer": "string",
+      "sandpaper": "number",
+      "protective_paper": "number",
+      "wire": "number",
+      "bodywork": "string",
+      "material_cost": "number",
+      "paint_price": "number",
+      "hardener_price": "number",
+      "filler_price": "number",
+      "reducer_price": "number",
+      "sandpaper_price": "number",
+      "paper_price": "number",
+      "wire_price": "number",
+      "bodywork_price": "number",
+      "total_cost_per_piece": "number",
+      "labor_and_cost_profit": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "body_shop_orders",
+    "pk": "order_id",
+    "uq": [
+      "order_number"
+    ],
+    "fk": [
+      "vehicles_fk_id",
+      "employees_fk_id"
+    ],
+    "required": [
+      "order_date",
+      "order_number"
+    ],
+    "attribute": {
+      "order_id": "string",
+      "vehicles_fk_id": "string",
+      "order_number": "string",
+      "order_date": "datetime",
+      "brand": "string",
+      "model": "string",
+      "license_plate": "string",
+      "color": "string",
+      "mileage": "string",
+      "assigned_mechanic": "string",
+      "work_performed": "string",
+      "total_cost": "number",
+      "profit": "number",
+      "employees_fk_id": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "monthly_control",
+    "pk": "control_id",
+    "uq": [],
+    "fk": [],
+    "required": [
+      "month",
+      "transaction_date",
+      "description"
+    ],
+    "attribute": {
+      "control_id": "string",
+      "month": "string",
+      "transaction_date": "datetime",
+      "description": "string",
+      "minor_rep_income": "number",
+      "major_rep_income": "number",
+      "other_income": "number",
+      "salary_expense": "number",
+      "rent_expense": "number",
+      "supplies_expense": "number",
+      "tools_equipment_expense": "number",
+      "other_expenses": "number",
+      "total_expenses": "number",
+      "total_amount": "number",
+      "exchange_rate": "number"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "work_contracts",
+    "pk": "contract_id",
+    "uq": [],
+    "fk": [
+      "employees_fk_id"
+    ],
+    "required": [
+      "employees_fk_id",
+      "issue_date"
+    ],
+    "attribute": {
+      "contract_id": "string",
+      "employees_fk_id": "string",
+      "issue_date": "datetime",
+      "reason": "string",
+      "destination": "string",
+      "notes": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "communications",
+    "pk": "communication_id",
+    "uq": [],
+    "fk": [
+      "employees_fk_id"
+    ],
+    "required": [
+      "communication_date",
+      "subject"
+    ],
+    "attribute": {
+      "communication_id": "string",
+      "employees_fk_id": "string",
+      "communication_date": "datetime",
+      "subject": "string",
+      "communication_type": "string",
+      "content": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "inspection_video",
+    "pk": "video_id",
+    "uq": [],
+    "fk": [
+      "inspection_cards_fk_id"
+    ],
+    "required": [
+      "video_url"
+    ],
+    "attribute": {
+      "video_id": "string",
+      "inspection_cards_fk_id": "string",
+      "video_url": "string",
+      "filename": "string",
+      "duration": "number",
+      "attachmentId": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "inspection_analysis",
+    "pk": "analysis_id",
+    "uq": [],
+    "fk": [
+      "inspection_cards_fk_id"
+    ],
+    "required": [
+      "status"
+    ],
+    "attribute": {
+      "analysis_id": "string",
+      "inspection_cards_fk_id": "string",
+      "inspection_video_fk_id": "string",
+      "damage_type": "string",
+      "damage_severity": "string",
+      "affected_parts": "array",
+      "repair_estimated_hours": "number",
+      "parts_needed": "array",
+      "confidence_score": "number",
+      "observations": "string",
+      "recommended_actions": "array",
+      "status": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "catalogState",
+    "pk": "catalog_id",
+    "uq": [
+      "name"
+    ],
+    "fk": [],
+    "required": [
+      "name"
+    ],
+    "attribute": {
+      "catalog_id": "string",
+      "name": "string",
+      "metadata": "array"
+    }
+  }
+]

@@ -45,4 +45,29 @@ export class GestionTallerProdInspectionVideo {
         }
         return h.store('inspection_video', payload);
     }
+
+    static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.update('inspection_video', id, GestionTallerProdInspectionVideo.build_payload(event));
+    }
+
+    static async delete(event: any, id: string, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.delete('inspection_video', id, event);
+    }
+
+    static async data_filter(event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.data_filter('inspection_video', event);
+    }
+
+    static async paginate(event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.paginate('inspection_video', event);
+    }
+
+    static async count(event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        const h = helpers || baseEntityHelpers;
+        return h.count('inspection_video', event);
+    }
 }

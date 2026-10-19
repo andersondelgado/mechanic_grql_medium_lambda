@@ -32,9 +32,9 @@ export class GestionTallerProdQuotes {
                 model: event.model || '',
                 address: event.address || '',
                 license_plate: event.license_plate || '',
-                year: event.year || '',
-                subtotal: event.subtotal || '',
-                total: event.total || '',
+                year: event.year != null && event.year !== '' ? Number(event.year) : 0,
+                subtotal: Number(event.subtotal || 0),
+                total: Number(event.total || 0),
                 status: event.status || '',
             },
             obj_fk
