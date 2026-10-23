@@ -23,9 +23,9 @@ export class GestionTallerProdPendingPurchases {
                 purchase_date: event.purchase_date || '',
                 product_name: event.product_name || '',
                 supplier_name: event.supplier_name || '',
-                purchased: event.purchased || '',
-                quantity: event.quantity || '',
-                unit_price: event.unit_price || '',
+                purchased: event.purchased ?? false,
+                quantity: event.quantity !== undefined && event.quantity !== null && event.quantity !== '' ? Number(event.quantity) : 1,
+                unit_price: event.unit_price !== undefined && event.unit_price !== null && event.unit_price !== '' ? Number(event.unit_price) : 0,
                 notes: event.notes || '',
             },
             obj_fk
