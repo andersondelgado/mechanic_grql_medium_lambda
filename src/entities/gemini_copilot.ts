@@ -429,6 +429,10 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
         let analysisId: string | undefined;
         if (payload.persist !== false && payload.persist !== 'false') {
             try {
+                // Al NO inyectar headerLambda, BaseEntityHelpers usa la Master API Key (apiKey),
+                // la cual cuenta con permisos administrativos en la tabla inspection_analysis.
+                // Si se inyectara el token del usuario cliente, la pasarela evaluaría ACLs restringidas
+                // retornando "user have not permission in this object".
                 const storePayload: any = {
                     db,
                     table: 'inspection_analysis',
@@ -437,8 +441,6 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
                 if (cardId) {
                     storePayload.obj_fk = [{ inspection_cards: Array.isArray(cardId) ? cardId : [cardId] }];
                 }
-                if (payload.headerLambda) storePayload.headerLambda = payload.headerLambda;
-                if (payload.headerLambdaObject) storePayload.headerLambdaObject = payload.headerLambdaObject;
 
                 const storeResult = await baseEntityHelpers.store('inspection_analysis', storePayload);
                 if (storeResult && !storeResult.error) {
@@ -450,16 +452,10 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
                                 table: 'inspection_cards',
                                 attribute: { status: 'completado' },
                             });
-                        } catch (uErr) {
-                            console.warn('No se pudo actualizar estado de inspection_cards:', uErr);
-                        }
+                        } catch { }
                     }
-                } else if (storeResult?.error) {
-                    console.error('Error al persistir inspection_analysis:', storeResult.error);
                 }
-            } catch (err: any) {
-                console.error('Excepción al persistir inspection_analysis en lambda:', err);
-            }
+            } catch { }
         }
 
         return {

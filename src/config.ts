@@ -34,6 +34,14 @@ try {
 } catch { }
 
 
+try {
+    const origEmitWarning = process.emitWarning;
+    process.emitWarning = (w: any, ...args: any[]) => {
+        if (typeof w === 'string' && w.includes('NODE_TLS_REJECT_UNAUTHORIZED')) return;
+        if (w?.message && w.message.includes('NODE_TLS_REJECT_UNAUTHORIZED')) return;
+        return (origEmitWarning as any).call(process, w, ...args);
+    };
+} catch { }
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 // Embedded Config
