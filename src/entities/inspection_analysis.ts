@@ -15,9 +15,11 @@ export class GestionTallerProdInspectionAnalysis {
             });
         }
 
+        const cardId = event.inspection_cards_fk_id || (Array.isArray(event.inspection_cards) ? event.inspection_cards[0] : event.inspection_cards) || '';
         return {
             db, table: 'inspection_analysis',
             attribute: {
+                inspection_cards_fk_id: cardId,
                 damage_type: event.damage_type || 'otros',
                 damage_severity: event.damage_severity || 'moderado',
                 affected_parts: event.affected_parts || [],

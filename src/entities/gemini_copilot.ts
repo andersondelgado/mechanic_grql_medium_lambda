@@ -411,49 +411,64 @@ Analiza el material multimedia del vehículo (fotos, video o audio del peritaje)
             analysisResult = { ...analysisResult, observations: analysisResult.raw_response };
         }
 
+        const cardId = payload.inspection_cards_fk_id || payload.inspection_cardsId || payload.cardId || payload.id || '';
+
         const analysis = {
+            inspection_cards_fk_id: cardId || '',
             damage_type: analysisResult.damage_type || 'otros',
             damage_severity: analysisResult.damage_severity || 'moderado',
-            affected_parts: analysisResult.affected_parts || [],
+            affected_parts: Array.isArray(analysisResult.affected_parts) ? analysisResult.affected_parts : [],
             repair_estimated_hours: Number(analysisResult.repair_estimated_hours || 0),
-            parts_needed: analysisResult.parts_needed || [],
+            parts_needed: Array.isArray(analysisResult.parts_needed) ? analysisResult.parts_needed : [],
             confidence_score: Number(analysisResult.confidence_score || 0),
             observations: analysisResult.observations || '',
-            recommended_actions: analysisResult.recommended_actions || [],
+            recommended_actions: Array.isArray(analysisResult.recommended_actions) ? analysisResult.recommended_actions : [],
             status: 'completado',
         };
 
         let analysisId: string | undefined;
         if (payload.persist !== false && payload.persist !== 'false') {
             try {
-                const cardId = payload.inspection_cards_fk_id || payload.inspection_cardsId || '';
-                const storeResult = await baseEntityHelpers.store('inspection_analysis', {
+                const storePayload: any = {
                     db,
                     table: 'inspection_analysis',
                     attribute: analysis,
-                    obj_fk: cardId ? [{ inspection_cards: Array.isArray(cardId) ? cardId : [cardId] }] : [],
-                    headerLambda: payload.headerLambda,
-                    headerLambdaObject: payload.headerLambdaObject,
-                });
-                if (storeResult && !storeResult.error) {
-                    analysisId = storeResult.id;
-                    if (cardId && !Array.isArray(cardId)) {
-                        await baseEntityHelpers.update('inspection_cards', cardId, {
-                            db, table: 'inspection_cards',
-                            attribute: { status: 'completado' },
-                            headerLambda: payload.headerLambda,
-                            headerLambdaObject: payload.headerLambdaObject,
-                        });
-                    }
+                };
+                if (cardId) {
+                    storePayload.obj_fk = [{ inspection_cards: Array.isArray(cardId) ? cardId : [cardId] }];
                 }
-            } catch {
-                // No se rompe la respuesta si falla el persist (la IA ya devolvió el dictamen)
+                if (payload.headerLambda) storePayload.headerLambda = payload.headerLambda;
+                if (payload.headerLambdaObject) storePayload.headerLambdaObject = payload.headerLambdaObject;
+
+                const storeResult = await baseEntityHelpers.store('inspection_analysis', storePayload);
+                if (storeResult && !storeResult.error) {
+                    analysisId = storeResult.id || storeResult.analysis_id;
+                    if (cardId && !Array.isArray(cardId)) {
+                        try {
+                            await baseEntityHelpers.update('inspection_cards', cardId, {
+                                db,
+                                table: 'inspection_cards',
+                                attribute: { status: 'completado' },
+                            });
+                        } catch (uErr) {
+                            console.warn('No se pudo actualizar estado de inspection_cards:', uErr);
+                        }
+                    }
+                } else if (storeResult?.error) {
+                    console.error('Error al persistir inspection_analysis:', storeResult.error);
+                }
+            } catch (err: any) {
+                console.error('Excepción al persistir inspection_analysis en lambda:', err);
             }
         }
 
         return {
             success: true,
-            analysis,
+            analysis: {
+                ...analysis,
+                analysis_id: analysisId,
+                id: analysisId,
+            },
             analysis_id: analysisId,
             file_id: bucketFileId || undefined,
             source,
