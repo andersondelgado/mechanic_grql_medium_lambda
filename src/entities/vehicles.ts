@@ -10,6 +10,7 @@ export class GestionTallerProdVehicles {
         const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
         const db = 'GestionTallerProd' + envSuffix;
 
+        const cId = Array.isArray(event.clients_fk_id) ? (event.clients_fk_id[0] || '') : (event.clients_fk_id || '');
         const obj_fk: any[] = [];
         if (event.clients_fk_id) {
             const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
@@ -19,6 +20,7 @@ export class GestionTallerProdVehicles {
         return {
             db, table: 'vehicles',
             attribute: {
+                clients_fk_id: cId,
                 license_plate: event.license_plate || '',
                 brand: event.brand || '',
                 model: event.model || '',
@@ -58,6 +60,16 @@ export class GestionTallerProdVehicles {
 
     static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
+        if (!event.clients_fk_id || (Array.isArray(event.clients_fk_id) && event.clients_fk_id.length === 0)) {
+            let cId = event.owner_tax_id ? await resolveId('clients', 'tax_id', event.owner_tax_id, event, h) : null;
+            if (!cId && event.tax_id) {
+                cId = await resolveId('clients', 'tax_id', event.tax_id, event, h);
+            }
+            if (!cId && (event.owner_name || event.client_name)) {
+                cId = await resolveId('clients', 'client_name', event.owner_name || event.client_name, event, h);
+            }
+            if (cId) event.clients_fk_id = [cId];
+        }
         return h.update('vehicles', id, GestionTallerProdVehicles.build_payload(event));
     }
 
