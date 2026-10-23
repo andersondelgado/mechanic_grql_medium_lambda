@@ -46,6 +46,12 @@ export class GestionTallerProdPendingPurchases {
 
     static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
+        if (!event.suppliers_fk_id || (Array.isArray(event.suppliers_fk_id) && event.suppliers_fk_id.length === 0)) {
+            if (event.supplier_name) {
+                const sId = await resolveId('suppliers', 'supplier_name', event.supplier_name, event, h);
+                if (sId) event.suppliers_fk_id = [sId];
+            }
+        }
         return h.update('pending_purchases', id, GestionTallerProdPendingPurchases.build_payload(event));
     }
 

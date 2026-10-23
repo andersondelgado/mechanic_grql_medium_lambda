@@ -45,6 +45,13 @@ export class GestionTallerProdAccountsReceivable {
 
     static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
+        if (!event.clients_fk_id || (Array.isArray(event.clients_fk_id) && event.clients_fk_id.length === 0)) {
+            let cId = event.tax_id ? await resolveId('clients', 'tax_id', event.tax_id, event, h) : null;
+            if (!cId && event.client_name) {
+                cId = await resolveId('clients', 'client_name', event.client_name, event, h);
+            }
+            if (cId) event.clients_fk_id = [cId];
+        }
         return h.update('accounts_receivable', id, GestionTallerProdAccountsReceivable.build_payload(event));
     }
 
