@@ -62,18 +62,40 @@ export class GestionTallerProdInspectionCards {
     }
 
     static normalize_filter(event: any): any {
-        if (event?.filter) {
-            if (event.filter.id) {
-                if (!event.arrayFilter) event.arrayFilter = [];
-                if (!event.arrayFilter.some((f: any) => f?.field === 'id' || f?.id)) {
-                    event.arrayFilter.push({ field: 'id', value: event.filter.id });
+        if (!event || typeof event !== 'object') return event;
+
+        const rawArrayFilter = Array.isArray(event.arrayFilter) ? event.arrayFilter : [];
+        const normalizedArrayFilter: any[] = [];
+
+        for (const item of rawArrayFilter) {
+            if (!item || typeof item !== 'object') continue;
+            if (item.field !== undefined) {
+                normalizedArrayFilter.push(item);
+            } else {
+                for (const [k, v] of Object.entries(item)) {
+                    normalizedArrayFilter.push({ field: k, value: v });
                 }
-                delete event.filter.id;
-            }
-            if (Object.keys(event.filter).length === 0) {
-                delete event.filter;
             }
         }
+
+        if (event.filter && typeof event.filter === 'object') {
+            const filterObj = event.filter;
+            if (filterObj.field !== undefined && filterObj.value !== undefined) {
+                const fName = String(filterObj.field);
+                if (!normalizedArrayFilter.some((f: any) => f?.field === fName)) {
+                    normalizedArrayFilter.push({ field: fName, value: filterObj.value });
+                }
+            } else {
+                for (const [k, v] of Object.entries(filterObj)) {
+                    if (!normalizedArrayFilter.some((f: any) => f?.field === k)) {
+                        normalizedArrayFilter.push({ field: k, value: v });
+                    }
+                }
+            }
+            delete event.filter;
+        }
+
+        event.arrayFilter = normalizedArrayFilter;
         return event;
     }
 

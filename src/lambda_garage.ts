@@ -4,6 +4,43 @@ import { ENTITY_REGISTRY } from './registry';
 import { GestionTallerProdCatalogState } from './entities/catalog_state';
 import { clearFkCache } from './helpers/fk_cache';
 
+function sanitizeQuery(query: any): void {
+    if (!query || typeof query !== 'object') return;
+
+    const rawArrayFilter = Array.isArray(query.arrayFilter) ? query.arrayFilter : [];
+    const normalizedArrayFilter: any[] = [];
+
+    for (const item of rawArrayFilter) {
+        if (!item || typeof item !== 'object') continue;
+        if (item.field !== undefined) {
+            normalizedArrayFilter.push(item);
+        } else {
+            for (const [k, v] of Object.entries(item)) {
+                normalizedArrayFilter.push({ field: k, value: v });
+            }
+        }
+    }
+
+    if (query.filter && typeof query.filter === 'object') {
+        const filterObj = query.filter;
+        if (filterObj.field !== undefined && filterObj.value !== undefined) {
+            const fName = String(filterObj.field);
+            if (!normalizedArrayFilter.some((f: any) => f?.field === fName)) {
+                normalizedArrayFilter.push({ field: fName, value: filterObj.value });
+            }
+        } else {
+            for (const [k, v] of Object.entries(filterObj)) {
+                if (!normalizedArrayFilter.some((f: any) => f?.field === k)) {
+                    normalizedArrayFilter.push({ field: k, value: v });
+                }
+            }
+        }
+        delete query.filter;
+    }
+
+    query.arrayFilter = normalizedArrayFilter;
+}
+
 async function main() {
     process.stdin.setEncoding('utf-8');
     let input = '';
@@ -45,18 +82,10 @@ async function main() {
                             ...act,
                             name: act.name || act.action || 'custom_function'
                         };
-                        if (normalizedAct.params?.query?.filter) {
-                            const filterObj = normalizedAct.params.query.filter;
-                            if (filterObj.id) {
-                                if (!normalizedAct.params.query.arrayFilter) normalizedAct.params.query.arrayFilter = [];
-                                if (!normalizedAct.params.query.arrayFilter.some((f: any) => f?.field === 'id' || f?.id)) {
-                                    normalizedAct.params.query.arrayFilter.push({ field: 'id', value: filterObj.id });
-                                }
-                                delete filterObj.id;
-                            }
-                            if (Object.keys(filterObj).length === 0) {
-                                delete normalizedAct.params.query.filter;
-                            }
+                        if (normalizedAct.params?.query) {
+                            sanitizeQuery(normalizedAct.params.query);
+                        } else if (normalizedAct.params && (normalizedAct.params.filter || normalizedAct.params.arrayFilter)) {
+                            sanitizeQuery(normalizedAct.params);
                         }
                         return normalizedAct;
                     });
