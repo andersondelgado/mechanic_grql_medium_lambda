@@ -24,6 +24,11 @@ export class GestionTallerProdVehicleReceipts {
             const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
             if (cArr.length > 0) obj_fk.push({ clients: cArr });
         }
+        if (event.obj_fk && Array.isArray(event.obj_fk)) {
+            for (const item of event.obj_fk) {
+                if (item && typeof item === 'object') obj_fk.push(item);
+            }
+        }
 
         return {
             db, table: 'vehicle_receipts',
@@ -49,7 +54,7 @@ export class GestionTallerProdVehicleReceipts {
                 time_in_shop: event.time_in_shop || '',
                 reason_for_entry: event.reason_for_entry || '',
                 work_performed: event.work_performed || '',
-                must_return: event.must_return || '',
+                must_return: typeof event.must_return === 'boolean' ? event.must_return : (event.must_return === 'true' || event.must_return === true || event.must_return === 1 || event.must_return === '1'),
                 pending_issues: event.pending_issues || '',
                 delivery_date: event.delivery_date || '',
                 expected_return_date: event.expected_return_date || '',

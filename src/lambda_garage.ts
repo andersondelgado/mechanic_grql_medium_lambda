@@ -41,6 +41,50 @@ function sanitizeQuery(query: any): void {
     query.arrayFilter = normalizedArrayFilter;
 }
 
+function sanitizeMutation(action: any): void {
+    if (!action?.params?.body || typeof action.params.body !== 'object') return;
+    const b = action.params.body;
+
+    if (b.must_return !== undefined) {
+        b.must_return = typeof b.must_return === 'boolean'
+            ? b.must_return
+            : (b.must_return === 'true' || b.must_return === true || b.must_return === 1 || b.must_return === '1');
+    }
+
+    const obj_fk: any[] = Array.isArray(b.obj_fk) ? [...b.obj_fk] : [];
+    if (b.vehicles_fk_id) {
+        const vArr = (Array.isArray(b.vehicles_fk_id) ? b.vehicles_fk_id : [b.vehicles_fk_id]).filter(Boolean);
+        if (vArr.length > 0 && !obj_fk.some((o: any) => o.vehicles)) {
+            obj_fk.push({ vehicles: vArr });
+        }
+        delete b.vehicles_fk_id;
+    }
+    if (b.clients_fk_id) {
+        const cArr = (Array.isArray(b.clients_fk_id) ? b.clients_fk_id : [b.clients_fk_id]).filter(Boolean);
+        if (cArr.length > 0 && !obj_fk.some((o: any) => o.clients)) {
+            obj_fk.push({ clients: cArr });
+        }
+        delete b.clients_fk_id;
+    }
+    if (b.employees_fk_id) {
+        const eArr = (Array.isArray(b.employees_fk_id) ? b.employees_fk_id : [b.employees_fk_id]).filter(Boolean);
+        if (eArr.length > 0 && !obj_fk.some((o: any) => o.employees)) {
+            obj_fk.push({ employees: eArr });
+        }
+        delete b.employees_fk_id;
+    } else if (b.employees_fk_id === '' || b.employees_fk_id === null) {
+        delete b.employees_fk_id;
+    }
+
+    delete b.clients;
+    delete b.vehicles;
+    delete b.employees;
+
+    if (obj_fk.length > 0) {
+        b.obj_fk = obj_fk;
+    }
+}
+
 async function main() {
     process.stdin.setEncoding('utf-8');
     let input = '';
@@ -86,6 +130,9 @@ async function main() {
                             sanitizeQuery(normalizedAct.params.query);
                         } else if (normalizedAct.params && (normalizedAct.params.filter || normalizedAct.params.arrayFilter)) {
                             sanitizeQuery(normalizedAct.params);
+                        }
+                        if (normalizedAct.params?.body) {
+                            sanitizeMutation(normalizedAct);
                         }
                         return normalizedAct;
                     });
