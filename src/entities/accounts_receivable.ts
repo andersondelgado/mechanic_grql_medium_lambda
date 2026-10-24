@@ -10,15 +10,16 @@ export class GestionTallerProdAccountsReceivable {
         const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
         const db = 'GestionTallerProd' + envSuffix;
 
+        const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
         const obj_fk: any[] = [];
-        if (event.clients_fk_id) {
-            const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
-            if (cArr.length > 0) obj_fk.push({ clients: cArr });
+        if (cArr.length > 0) {
+            obj_fk.push({ clients: cArr });
         }
 
         return {
             db, table: 'accounts_receivable',
             attribute: {
+                clients_fk_id: cArr[0] || '',
                 transaction_date: event.transaction_date || '',
                 payment_date: event.payment_date || '',
                 description: event.description || '',
