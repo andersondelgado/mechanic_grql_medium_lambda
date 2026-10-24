@@ -51,22 +51,23 @@ function sanitizeMutation(action: any): void {
             : (b.must_return === 'true' || b.must_return === true || b.must_return === 1 || b.must_return === '1');
     }
 
-    if (Array.isArray(b.vehicles_fk_id)) {
-        b.vehicles_fk_id = b.vehicles_fk_id[0] || '';
-    }
-    if (Array.isArray(b.clients_fk_id)) {
-        b.clients_fk_id = b.clients_fk_id[0] || '';
-    }
-    if (Array.isArray(b.employees_fk_id)) {
-        b.employees_fk_id = b.employees_fk_id[0] || '';
-    } else if (b.employees_fk_id == null) {
-        b.employees_fk_id = '';
-    }
+    const vArr = (Array.isArray(b.vehicles_fk_id) ? b.vehicles_fk_id : [b.vehicles_fk_id]).filter(Boolean);
+    const cArr = (Array.isArray(b.clients_fk_id) ? b.clients_fk_id : [b.clients_fk_id]).filter(Boolean);
+    const eArr = (Array.isArray(b.employees_fk_id) ? b.employees_fk_id : [b.employees_fk_id]).filter(Boolean);
+
+    b.vehicles_fk_id = vArr[0] || '';
+    b.clients_fk_id = cArr[0] || '';
+    b.employees_fk_id = eArr[0] || '';
 
     delete b.clients;
     delete b.vehicles;
     delete b.employees;
-    delete b.obj_fk;
+
+    b.obj_fk = [
+        { vehicles: vArr },
+        { clients: cArr },
+        { employees: eArr }
+    ];
 }
 
 async function main() {

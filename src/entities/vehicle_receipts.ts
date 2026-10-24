@@ -11,16 +11,22 @@ export class GestionTallerProdVehicleReceipts {
         const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
         const db = 'GestionTallerProd' + envSuffix;
 
-        const vId = Array.isArray(event.vehicles_fk_id) ? (event.vehicles_fk_id[0] || '') : (event.vehicles_fk_id || '');
-        const cId = Array.isArray(event.clients_fk_id) ? (event.clients_fk_id[0] || '') : (event.clients_fk_id || '');
-        const eId = Array.isArray(event.employees_fk_id) ? (event.employees_fk_id[0] || '') : (event.employees_fk_id || '');
+        const vArr = (Array.isArray(event.vehicles_fk_id) ? event.vehicles_fk_id : [event.vehicles_fk_id]).filter(Boolean);
+        const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
+        const eArr = (Array.isArray(event.employees_fk_id) ? event.employees_fk_id : [event.employees_fk_id]).filter(Boolean);
+
+        const obj_fk: any[] = [
+            { vehicles: vArr },
+            { clients: cArr },
+            { employees: eArr }
+        ];
 
         return {
             db, table: 'vehicle_receipts',
             attribute: {
-                vehicles_fk_id: vId,
-                clients_fk_id: cId,
-                employees_fk_id: eId,
+                vehicles_fk_id: vArr[0] || '',
+                clients_fk_id: cArr[0] || '',
+                employees_fk_id: eArr[0] || '',
                 receipt_number: event.receipt_number || '',
                 entry_date: event.entry_date || '',
                 owner_name: event.owner_name || '',
@@ -55,7 +61,8 @@ export class GestionTallerProdVehicleReceipts {
                 authorized_services: event.authorized_services || '',
                 client_signature: event.client_signature || event.signature_client || event.firma_cliente || event.clientSignature || '',
                 mechanic_signature: event.mechanic_signature || event.signature_mechanic || event.firma_mecanico || event.firma_tecnico || event.mechanicSignature || '',
-            }
+            },
+            obj_fk
         };
     }
 
