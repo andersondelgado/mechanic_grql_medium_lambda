@@ -51,38 +51,22 @@ function sanitizeMutation(action: any): void {
             : (b.must_return === 'true' || b.must_return === true || b.must_return === 1 || b.must_return === '1');
     }
 
-    const obj_fk: any[] = Array.isArray(b.obj_fk) ? [...b.obj_fk] : [];
-    if (b.vehicles_fk_id) {
-        const vArr = (Array.isArray(b.vehicles_fk_id) ? b.vehicles_fk_id : [b.vehicles_fk_id]).filter(Boolean);
-        if (vArr.length > 0 && !obj_fk.some((o: any) => o.vehicles)) {
-            obj_fk.push({ vehicles: vArr });
-        }
-        delete b.vehicles_fk_id;
+    if (Array.isArray(b.vehicles_fk_id)) {
+        b.vehicles_fk_id = b.vehicles_fk_id[0] || '';
     }
-    if (b.clients_fk_id) {
-        const cArr = (Array.isArray(b.clients_fk_id) ? b.clients_fk_id : [b.clients_fk_id]).filter(Boolean);
-        if (cArr.length > 0 && !obj_fk.some((o: any) => o.clients)) {
-            obj_fk.push({ clients: cArr });
-        }
-        delete b.clients_fk_id;
+    if (Array.isArray(b.clients_fk_id)) {
+        b.clients_fk_id = b.clients_fk_id[0] || '';
     }
-    if (b.employees_fk_id) {
-        const eArr = (Array.isArray(b.employees_fk_id) ? b.employees_fk_id : [b.employees_fk_id]).filter(Boolean);
-        if (eArr.length > 0 && !obj_fk.some((o: any) => o.employees)) {
-            obj_fk.push({ employees: eArr });
-        }
-        delete b.employees_fk_id;
-    } else if (b.employees_fk_id === '' || b.employees_fk_id === null) {
-        delete b.employees_fk_id;
+    if (Array.isArray(b.employees_fk_id)) {
+        b.employees_fk_id = b.employees_fk_id[0] || '';
+    } else if (b.employees_fk_id == null) {
+        b.employees_fk_id = '';
     }
 
     delete b.clients;
     delete b.vehicles;
     delete b.employees;
-
-    if (obj_fk.length > 0) {
-        b.obj_fk = obj_fk;
-    }
+    delete b.obj_fk;
 }
 
 async function main() {

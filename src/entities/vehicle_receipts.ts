@@ -11,28 +11,16 @@ export class GestionTallerProdVehicleReceipts {
         const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
         const db = 'GestionTallerProd' + envSuffix;
 
-        const obj_fk: any[] = [];
-        if (event.vehicles_fk_id) {
-            const vArr = (Array.isArray(event.vehicles_fk_id) ? event.vehicles_fk_id : [event.vehicles_fk_id]).filter(Boolean);
-            if (vArr.length > 0) obj_fk.push({ vehicles: vArr });
-        }
-        if (event.employees_fk_id) {
-            const eArr = (Array.isArray(event.employees_fk_id) ? event.employees_fk_id : [event.employees_fk_id]).filter(Boolean);
-            if (eArr.length > 0) obj_fk.push({ employees: eArr });
-        }
-        if (event.clients_fk_id) {
-            const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
-            if (cArr.length > 0) obj_fk.push({ clients: cArr });
-        }
-        if (event.obj_fk && Array.isArray(event.obj_fk)) {
-            for (const item of event.obj_fk) {
-                if (item && typeof item === 'object') obj_fk.push(item);
-            }
-        }
+        const vId = Array.isArray(event.vehicles_fk_id) ? (event.vehicles_fk_id[0] || '') : (event.vehicles_fk_id || '');
+        const cId = Array.isArray(event.clients_fk_id) ? (event.clients_fk_id[0] || '') : (event.clients_fk_id || '');
+        const eId = Array.isArray(event.employees_fk_id) ? (event.employees_fk_id[0] || '') : (event.employees_fk_id || '');
 
         return {
             db, table: 'vehicle_receipts',
             attribute: {
+                vehicles_fk_id: vId,
+                clients_fk_id: cId,
+                employees_fk_id: eId,
                 receipt_number: event.receipt_number || '',
                 entry_date: event.entry_date || '',
                 owner_name: event.owner_name || '',
@@ -67,8 +55,7 @@ export class GestionTallerProdVehicleReceipts {
                 authorized_services: event.authorized_services || '',
                 client_signature: event.client_signature || event.signature_client || event.firma_cliente || event.clientSignature || '',
                 mechanic_signature: event.mechanic_signature || event.signature_mechanic || event.firma_mecanico || event.firma_tecnico || event.mechanicSignature || '',
-            },
-            obj_fk
+            }
         };
     }
 
@@ -87,12 +74,39 @@ export class GestionTallerProdVehicleReceipts {
                 if (eId) event.employees_fk_id = [eId];
             }
         }
+        if (!event.clients_fk_id || (Array.isArray(event.clients_fk_id) && event.clients_fk_id.length === 0)) {
+            let cId = event.owner_tax_id ? await resolveId('clients', 'tax_id', event.owner_tax_id, event, h) : null;
+            if (!cId && (event.owner_name || event.delivered_by)) {
+                cId = await resolveId('clients', 'client_name', event.owner_name || event.delivered_by, event, h);
+            }
+            if (cId) event.clients_fk_id = [cId];
+        }
         let payload = GestionTallerProdVehicleReceipts.build_payload(event);
         return storeWithDeduplication('vehicle_receipts', payload, 'license_plate', event.license_plate, event, h);
     }
 
     static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
+        if (!event.vehicles_fk_id || (Array.isArray(event.vehicles_fk_id) && event.vehicles_fk_id.length === 0)) {
+            if (event.license_plate) {
+                const vId = await resolveId('vehicles', 'license_plate', event.license_plate, event, h);
+                if (vId) event.vehicles_fk_id = [vId];
+            }
+        }
+        if (!event.employees_fk_id || (Array.isArray(event.employees_fk_id) && event.employees_fk_id.length === 0)) {
+            const empName = event.assigned_technician || event.receiving_technician || event.received_by;
+            if (empName) {
+                const eId = await resolveId('employees', 'employee_name', empName, event, h);
+                if (eId) event.employees_fk_id = [eId];
+            }
+        }
+        if (!event.clients_fk_id || (Array.isArray(event.clients_fk_id) && event.clients_fk_id.length === 0)) {
+            let cId = event.owner_tax_id ? await resolveId('clients', 'tax_id', event.owner_tax_id, event, h) : null;
+            if (!cId && (event.owner_name || event.delivered_by)) {
+                cId = await resolveId('clients', 'client_name', event.owner_name || event.delivered_by, event, h);
+            }
+            if (cId) event.clients_fk_id = [cId];
+        }
         return h.update('vehicle_receipts', id, GestionTallerProdVehicleReceipts.build_payload(event));
     }
 
