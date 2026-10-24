@@ -61,14 +61,30 @@ export class GestionTallerProdInspectionCards {
         return h.delete('inspection_cards', id, event);
     }
 
+    static normalize_filter(event: any): any {
+        if (event?.filter) {
+            if (event.filter.id) {
+                if (!event.arrayFilter) event.arrayFilter = [];
+                if (!event.arrayFilter.some((f: any) => f?.field === 'id' || f?.id)) {
+                    event.arrayFilter.push({ field: 'id', value: event.filter.id });
+                }
+                delete event.filter.id;
+            }
+            if (Object.keys(event.filter).length === 0) {
+                delete event.filter;
+            }
+        }
+        return event;
+    }
+
     static async data_filter(event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
-        return h.data_filter('inspection_cards', event);
+        return h.data_filter('inspection_cards', GestionTallerProdInspectionCards.normalize_filter(event));
     }
 
     static async paginate(event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
-        return h.paginate('inspection_cards', event);
+        return h.paginate('inspection_cards', GestionTallerProdInspectionCards.normalize_filter(event));
     }
 
     static async count(event: any, helpers?: BaseEntityHelpers): Promise<any> {

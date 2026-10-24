@@ -40,10 +40,26 @@ async function main() {
 
                 if (EntityClass) {
                     const rawActions = step.actions || [];
-                    const actions = (rawActions.length > 0 ? rawActions : [{ name: 'custom_function', action: 'custom_function' }]).map((act: any) => ({
-                        ...act,
-                        name: act.name || act.action || 'custom_function'
-                    }));
+                    const actions = (rawActions.length > 0 ? rawActions : [{ name: 'custom_function', action: 'custom_function' }]).map((act: any) => {
+                        const normalizedAct = {
+                            ...act,
+                            name: act.name || act.action || 'custom_function'
+                        };
+                        if (normalizedAct.params?.query?.filter) {
+                            const filterObj = normalizedAct.params.query.filter;
+                            if (filterObj.id) {
+                                if (!normalizedAct.params.query.arrayFilter) normalizedAct.params.query.arrayFilter = [];
+                                if (!normalizedAct.params.query.arrayFilter.some((f: any) => f?.field === 'id' || f?.id)) {
+                                    normalizedAct.params.query.arrayFilter.push({ field: 'id', value: filterObj.id });
+                                }
+                                delete filterObj.id;
+                            }
+                            if (Object.keys(filterObj).length === 0) {
+                                delete normalizedAct.params.query.filter;
+                            }
+                        }
+                        return normalizedAct;
+                    });
 
                     if (actions.length > 1) {
                         const stepResults = await Promise.all(
