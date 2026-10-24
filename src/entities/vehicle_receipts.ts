@@ -16,9 +16,9 @@ export class GestionTallerProdVehicleReceipts {
         const eArr = (Array.isArray(event.employees_fk_id) ? event.employees_fk_id : [event.employees_fk_id]).filter(Boolean);
 
         const obj_fk: any[] = [
-            { vehicles: vArr },
-            { clients: cArr },
-            { employees: eArr }
+            { vehicles: vArr ?? [] },
+            { clients: cArr ?? [] },
+            { employees: eArr ?? [] }
         ];
 
         return {
