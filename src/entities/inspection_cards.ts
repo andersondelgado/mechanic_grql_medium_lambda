@@ -10,33 +10,25 @@ export class GestionTallerProdInspectionCards {
         const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
         const db = 'GestionTallerProd' + envSuffix;
 
-        const obj_fk: any[] = [];
-        if (event.vehicles_fk_id) {
-            const vArr = (Array.isArray(event.vehicles_fk_id) ? event.vehicles_fk_id : [event.vehicles_fk_id]).filter(Boolean);
-            if (vArr.length > 0) obj_fk.push({ vehicles: vArr });
-        }
-        if (event.employees_fk_id) {
-            const eArr = (Array.isArray(event.employees_fk_id) ? event.employees_fk_id : [event.employees_fk_id]).filter(Boolean);
-            if (eArr.length > 0) obj_fk.push({ employees: eArr });
-        }
-        if (event.clients_fk_id) {
-            const cArr = (Array.isArray(event.clients_fk_id) ? event.clients_fk_id : [event.clients_fk_id]).filter(Boolean);
-            if (cArr.length > 0) obj_fk.push({ clients: cArr });
-        }
+        const vId = Array.isArray(event.vehicles_fk_id) ? (event.vehicles_fk_id[0] || '') : (event.vehicles_fk_id || '');
+        const cId = Array.isArray(event.clients_fk_id) ? (event.clients_fk_id[0] || '') : (event.clients_fk_id || '');
+        const eId = Array.isArray(event.employees_fk_id) ? (event.employees_fk_id[0] || '') : (event.employees_fk_id || '');
 
         return {
             db, table: 'inspection_cards',
             attribute: {
+                vehicles_fk_id: vId,
+                clients_fk_id: cId,
+                employees_fk_id: eId,
                 inspection_type: event.inspection_type || '',
                 inspection_date: event.inspection_date || '',
                 item_name: event.item_name || '',
-                check_yes: event.check_yes || false,
-                check_no: event.check_no || false,
+                check_yes: event.check_yes != null ? Boolean(event.check_yes) : false,
+                check_no: event.check_no != null ? Boolean(event.check_no) : false,
                 observations: event.observations || '',
                 status: event.status || 'pending',
-                cost_estimate: Number(event.cost_estimate || 0),
-            },
-            obj_fk
+                cost_estimate: event.cost_estimate != null ? Number(event.cost_estimate) : 0,
+            }
         };
     }
 
