@@ -6,7 +6,7 @@ import { resolveId } from '../helpers/fk_cache';
 export class GestionTallerProdInspectionCards {
     static table = 'inspection_cards';
 
-    static build_payload(event: any): any {
+        static build_payload(event: any): any {
         const envSuffix = DB_VAR.includes('-') ? '-' + DB_VAR.split('-')[1] : '';
         const db = 'GestionTallerProd' + envSuffix;
 
@@ -14,7 +14,15 @@ export class GestionTallerProdInspectionCards {
         const cId = Array.isArray(event.clients_fk_id) ? (event.clients_fk_id[0] || '') : (event.clients_fk_id || '');
         const eId = Array.isArray(event.employees_fk_id) ? (event.employees_fk_id[0] || '') : (event.employees_fk_id || '');
 
-        return {
+        const obj_fk: any[] = [];
+        if (vId) obj_fk.push({ vehicles: [vId] });
+        if (cId) obj_fk.push({ clients: [cId] });
+        if (eId) obj_fk.push({ employees: [eId] });
+
+        const sig = event.client_signature || event.signature_client || event.firma_cliente || event.clientSignature || '';
+        const sigDate = event.client_signature_date || event.signature_date || '';
+
+        const payload: any = {
             db, table: 'inspection_cards',
             attribute: {
                 vehicles_fk_id: vId,
@@ -28,8 +36,16 @@ export class GestionTallerProdInspectionCards {
                 observations: event.observations || '',
                 status: event.status || 'pending',
                 cost_estimate: event.cost_estimate != null ? Number(event.cost_estimate) : 0,
+                client_signature: sig,
+                client_signature_date: sigDate,
             }
         };
+
+        if (obj_fk.length > 0) {
+            payload.obj_fk = obj_fk;
+        }
+
+        return payload;
     }
 
     static async store(event: any, helpers?: BaseEntityHelpers, sec?: MiddlewareSecurity): Promise<any> {
@@ -51,9 +67,25 @@ export class GestionTallerProdInspectionCards {
         return storeWithDeduplication('inspection_cards', payload, 'item_name', event.item_name, event, h);
     }
 
-    static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
+        static async update(id: string, event: any, helpers?: BaseEntityHelpers): Promise<any> {
         const h = helpers || baseEntityHelpers;
-        return h.update('inspection_cards', id, GestionTallerProdInspectionCards.build_payload(event));
+
+        let existingRecord: any = null;
+        try {
+            const records = await h.data_filter('inspection_cards', {
+                arrayFilter: [{ field: 'id', value: id }]
+            });
+            if (records && Array.isArray(records) && records.length > 0) {
+                existingRecord = records[0];
+            } else if (records && Array.isArray(records.content) && records.content.length > 0) {
+                existingRecord = records.content[0];
+            } else if (records && Array.isArray(records.data) && records.data.length > 0) {
+                existingRecord = records.data[0];
+            }
+        } catch (_) {}
+
+        const mergedEvent = existingRecord ? { ...existingRecord, ...event } : event;
+        return h.update('inspection_cards', id, GestionTallerProdInspectionCards.build_payload(mergedEvent));
     }
 
     static async delete(event: any, id: string, helpers?: BaseEntityHelpers): Promise<any> {

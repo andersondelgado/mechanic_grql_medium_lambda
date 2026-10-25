@@ -457,7 +457,9 @@
       "clients_fk_id": "string",
       "employees_fk_id": "string",
       "status": "string",
-      "cost_estimate": "number"
+      "cost_estimate": "number",
+      "client_signature": "string",
+      "client_signature_date": "datetime"
     }
   },
   {
