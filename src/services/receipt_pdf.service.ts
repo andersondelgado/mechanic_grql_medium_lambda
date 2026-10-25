@@ -50,7 +50,7 @@ export class ReceiptPdfService {
       color: rgb(0.08, 0.12, 0.18),
     });
 
-    page1.drawText('TALLER INTEGRALE$ 360 GARAGE C.A.', {
+    page1.drawText('TALLER INTEGRAL 360 GARAGE C.A.', {
       x: 45,
       y: height - 50,
       size: 14,
