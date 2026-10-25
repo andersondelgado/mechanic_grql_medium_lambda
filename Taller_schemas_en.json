@@ -506,7 +506,8 @@
     ],
     "fk": [
       "vehicles_fk_id",
-      "employees_fk_id"
+      "employees_fk_id",
+      "clients_fk_id"
     ],
     "required": [
       "order_date",
@@ -515,8 +516,11 @@
     "attribute": {
       "order_id": "string",
       "vehicles_fk_id": "string",
+      "clients_fk_id": "string",
+      "employees_fk_id": "string",
       "order_number": "string",
       "order_date": "datetime",
+      "entry_date": "datetime",
       "brand": "string",
       "model": "string",
       "license_plate": "string",
@@ -524,9 +528,12 @@
       "mileage": "string",
       "assigned_mechanic": "string",
       "work_performed": "string",
+      "description": "string",
       "total_cost": "number",
       "profit": "number",
-      "employees_fk_id": "string"
+      "status": "string",
+      "client_name": "string",
+      "tax_id": "string"
     }
   },
   {
