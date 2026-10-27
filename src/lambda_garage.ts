@@ -102,6 +102,8 @@ async function main() {
                 const stepKey = step.name || step.functionName || 'step';
                 const EntityClass = ENTITY_REGISTRY[step.name]
                     || ENTITY_REGISTRY[step.functionName]
+                    || (String(step.name).toLowerCase().includes('payment') ? ENTITY_REGISTRY['payment_methods'] : null)
+                    || (String(step.name).toLowerCase().includes('currenc') || String(step.name).toLowerCase().includes('moneda') ? ENTITY_REGISTRY['currencies'] : null)
                     || (String(step.name).toLowerCase().includes('catalog') ? GestionTallerProdCatalogState : null);
 
                 if (EntityClass) {
