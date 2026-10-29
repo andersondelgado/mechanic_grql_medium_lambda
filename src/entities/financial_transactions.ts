@@ -26,8 +26,13 @@ export class GestionTallerProdFinancialTransactions {
                 tools_equipment_expense: event.tools_equipment_expense || 0,
                 other_expenses: event.other_expenses || 0,
                 total_expenses: event.total_expenses || 0,
-                total_amount: event.total_amount || 0,
+                total_amount: event.total_amount || event.amount || 0,
                 exchange_rate: event.exchange_rate || 0,
+                payment_method_id: event.payment_method_id || '',
+                payment_method_name: event.payment_method_name || '',
+                currency: event.currency || 'USD',
+                type: event.type || '',
+                category: event.category || '',
             },
             obj_fk
         };

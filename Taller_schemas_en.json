@@ -291,7 +291,12 @@
       "other_expenses": "number",
       "total_expenses": "number",
       "total_amount": "number",
-      "exchange_rate": "number"
+      "exchange_rate": "number",
+      "payment_method_id": "string",
+      "payment_method_name": "string",
+      "currency": "string",
+      "type": "string",
+      "category": "string"
     }
   },
   {
@@ -564,7 +569,12 @@
       "other_expenses": "number",
       "total_expenses": "number",
       "total_amount": "number",
-      "exchange_rate": "number"
+      "exchange_rate": "number",
+      "payment_method_id": "string",
+      "payment_method_name": "string",
+      "currency": "string",
+      "type": "string",
+      "category": "string"
     }
   },
   {
@@ -670,6 +680,117 @@
       "catalog_id": "string",
       "name": "string",
       "metadata": "array"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "currencies",
+    "pk": "currency_id",
+    "uq": [
+      "code"
+    ],
+    "fk": [],
+    "required": [
+      "code",
+      "name",
+      "symbol",
+      "rate"
+    ],
+    "attribute": {
+      "currency_id": "string",
+      "code": "string",
+      "name": "string",
+      "symbol": "string",
+      "rate": "number",
+      "is_base": "boolean",
+      "decimals": "integer",
+      "flag": "string",
+      "countries": "array",
+      "last_updated": "datetime"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "exchange_rate_history",
+    "pk": "rate_history_id",
+    "uq": [],
+    "fk": [],
+    "required": [
+      "date",
+      "currency_code",
+      "rate"
+    ],
+    "attribute": {
+      "rate_history_id": "string",
+      "date": "datetime",
+      "currency_code": "string",
+      "rate": "number",
+      "source": "string",
+      "notes": "string",
+      "timestamp": "datetime"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "payment_methods",
+    "pk": "payment_method_id",
+    "uq": [],
+    "fk": [],
+    "required": [
+      "country",
+      "type",
+      "title",
+      "currency"
+    ],
+    "attribute": {
+      "payment_method_id": "string",
+      "country": "string",
+      "type": "string",
+      "title": "string",
+      "currency": "string",
+      "bank_name": "string",
+      "phone": "string",
+      "tax_id": "string",
+      "beneficiary": "string",
+      "account_number": "string",
+      "email": "string",
+      "binance_id": "string",
+      "wallet_address": "string",
+      "network": "string",
+      "instructions": "string",
+      "is_active": "boolean",
+      "qr_code_url": "string"
+    }
+  },
+  {
+    "db": "GestionTallerProd",
+    "table": "company_settings",
+    "pk": "company_id",
+    "uq": [
+      "taxId"
+    ],
+    "fk": [],
+    "required": [
+      "commercialName",
+      "taxId"
+    ],
+    "attribute": {
+      "company_id": "string",
+      "commercialName": "string",
+      "legalName": "string",
+      "documentHeaderName": "string",
+      "taxIdLabel": "string",
+      "taxId": "string",
+      "phone": "string",
+      "whatsapp": "string",
+      "email": "string",
+      "address": "string",
+      "specialties": "string",
+      "website": "string",
+      "country": "string",
+      "logoDataUrl": "string",
+      "legalClause": "string",
+      "updatedAt": "datetime"
     }
   }
 ]
