@@ -240,7 +240,8 @@ export class GeminiGarageCopilot {
 
     static async generate_draft_quote(event: any): Promise<any> {
         const payload = event?.body || event;
-        const systemInstruction = `Eres un Asistente de Presupuestos de Taller Mecánico de Élite (Taller Integral 360 / Urbaez Motors).
+        const companyName = payload?.company_name || 'Taller Integral 360';
+        const systemInstruction = `Eres un Asistente de Presupuestos de Taller Mecánico de Élite (${companyName}).
 Extrae y estructura la solicitud de trabajo en formato JSON estricto con los siguientes campos (tabla 'quotes' + 'quote_items'):
 - client_name (string)
 - tax_id (string)

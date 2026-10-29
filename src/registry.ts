@@ -26,7 +26,8 @@ import {
     GestionTallerProdStats,
     GeminiGarageCopilot,
     GestionTallerProdPaymentMethods,
-    GestionTallerProdCurrencies
+    GestionTallerProdCurrencies,
+    GestionTallerProdCompanySettings
 } from './entities';
 
 export const ENTITY_REGISTRY: Record<string, any> = {
@@ -74,13 +75,17 @@ export const ENTITY_REGISTRY: Record<string, any> = {
     'GestionTallerProd_stats': GestionTallerProdStats,
     'stats': GestionTallerProdStats,
 
-    // Multimoneda y Métodos de Pago
+    // Multimoneda, Métodos de Pago y Configuración de Empresa (Marca Blanca)
     'payment_methods': GestionTallerProdPaymentMethods,
     'GestionTallerProd_payment_methods': GestionTallerProdPaymentMethods,
     'paymentMethods': GestionTallerProdPaymentMethods,
     'currencies': GestionTallerProdCurrencies,
     'GestionTallerProd_currencies': GestionTallerProdCurrencies,
     'currency_settings': GestionTallerProdCurrencies,
+    'exchange_rate_history': GestionTallerProdCurrencies,
+    'company_settings': GestionTallerProdCompanySettings,
+    'GestionTallerProd_company_settings': GestionTallerProdCompanySettings,
+    'companySettings': GestionTallerProdCompanySettings,
 
     // Gemini AI Copilot de Taller
     'gemini_copilot': GeminiGarageCopilot,
